@@ -17,3 +17,5 @@ thiserror = "2"
 image = "0.25"
 printpdf = "0.7"
 base64 = "0.22"
+
+[workspace]

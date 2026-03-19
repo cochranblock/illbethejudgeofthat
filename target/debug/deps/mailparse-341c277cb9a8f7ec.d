@@ -1,0 +1,11 @@
+/Users/mcochran/dev/illbethejudgeofthat/target/debug/deps/mailparse-341c277cb9a8f7ec.d: /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/lib.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/addrparse.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/body.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/dateparse.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/header.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/headers.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/msgidparse.rs
+
+/Users/mcochran/dev/illbethejudgeofthat/target/debug/deps/libmailparse-341c277cb9a8f7ec.rmeta: /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/lib.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/addrparse.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/body.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/dateparse.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/header.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/headers.rs /Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/msgidparse.rs
+
+/Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/lib.rs:
+/Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/addrparse.rs:
+/Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/body.rs:
+/Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/dateparse.rs:
+/Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/header.rs:
+/Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/headers.rs:
+/Users/mcochran/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/mailparse-0.15.0/src/msgidparse.rs:
