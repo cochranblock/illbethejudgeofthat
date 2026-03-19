@@ -1,0 +1,19 @@
+[package]
+name = "illbethejudgeofthat"
+version = "0.1.0"
+edition = "2021"
+description = "Pro se custody case builder. Google Takeout to courtroom in one evening."
+license = "Unlicense"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+mailparse = "0.15"
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1"
+thiserror = "2"
+image = "0.25"
+printpdf = "0.7"
+base64 = "0.22"
