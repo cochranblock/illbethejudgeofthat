@@ -1,0 +1,13 @@
+{
+  "plaintiff": "Maria Santos",
+  "defendant": "Derek Santos",
+  "children": [
+    { "name": "Tommy Santos", "dob": "06/11/2017" }
+  ],
+  "case_number": "C-99-FM-25-000001",
+  "state": "MD",
+  "county": "Fictitious County",
+  "custody_schedule": "weekly-friday",
+  "input": "takeout.mbox",
+  "output": "./filing"
+}
