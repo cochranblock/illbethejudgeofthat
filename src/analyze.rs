@@ -292,19 +292,59 @@ pub fn analyze(
             ));
         }
 
-        // === IEP ===
+        // === IEP (IDEA-specific) ===
         if subject_lower.contains("iep")
             || subject_lower.contains("annual review")
             || body_has_word(&body_lower, "individualized education")
         {
             let mut cat = FindingCategory::IepViolation;
             let mut summary = "IEP-related communication".to_string();
+            let mut idea_tags: Vec<String> = Vec::new();
 
+            // Detect specific IDEA provisions
+            if body_lower.contains("placement") {
+                idea_tags.push("IDEA §300.116 Placement (LRE)".into());
+            }
+            if body_lower.contains("elopement") {
+                idea_tags.push("IDEA §300.324 BIP/Safety".into());
+            }
+            if body_lower.contains("bip") || body_lower.contains("behavioral intervention") {
+                idea_tags.push("IDEA §300.324(a)(2)(i) BIP".into());
+            }
+            if body_lower.contains("fba") || body_lower.contains("functional behavioral") {
+                idea_tags.push("IDEA §300.530(f) FBA".into());
+            }
+            if body_lower.contains("transition") {
+                idea_tags.push("IDEA §300.320(b) Transition Services".into());
+            }
+            if body_lower.contains("least restrictive") {
+                idea_tags.push("IDEA §300.114 LRE".into());
+            }
+            if body_lower.contains("procedural safeguard") {
+                idea_tags.push("IDEA §300.504 Procedural Safeguards".into());
+            }
+            if body_lower.contains("prior written notice") {
+                idea_tags.push("IDEA §300.503 Prior Written Notice".into());
+            }
+            if body_lower.contains("compensatory") {
+                idea_tags.push("IDEA Compensatory Services".into());
+            }
+            if body_lower.contains("extended school year") || body_lower.contains("esy") {
+                idea_tags.push("IDEA §300.106 ESY".into());
+            }
+            if body_lower.contains("progress monitoring") || body_lower.contains("data collection") {
+                idea_tags.push("IDEA §300.320(a)(3) Progress Monitoring".into());
+            }
+
+            // Build specific summary
             if body_lower.contains("missed services")
                 || body_lower.contains("not provided")
                 || body_lower.contains("did not receive")
             {
-                summary = "IEP services missed or not provided".into();
+                summary = format!("IEP services missed or not provided [{}]",
+                    if idea_tags.is_empty() { "FAPE".into() } else { idea_tags.join(", ") });
+            } else if !idea_tags.is_empty() {
+                summary = format!("IEP concern: {}", idea_tags.join(", "));
             } else if subject_lower.contains("draft") {
                 summary = "IEP draft document exchange".into();
             } else if subject_lower.contains("invite") || subject_lower.contains("meeting") {
@@ -312,7 +352,13 @@ pub fn analyze(
                 cat = FindingCategory::DailyReport;
             }
 
-            findings.push(base(cat, summary, vec![]));
+            let highlights = extract_matching_lines(&email.body, &[
+                "placement", "elopement", "bip", "fba", "transition",
+                "least restrictive", "procedural safeguard", "prior written notice",
+                "compensatory", "esy", "progress monitoring", "missed services",
+            ]);
+
+            findings.push(base(cat, summary, highlights));
         }
 
         // === STATE COMPLAINT ===
