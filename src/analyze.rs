@@ -36,7 +36,7 @@ pub enum CustodyParent {
     Unknown,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum FindingCategory {
     CustodyInterference,
     FoodRecord,

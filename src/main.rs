@@ -10,6 +10,7 @@ mod contradict;
 mod gaps;
 mod exhibit;
 mod forms;
+mod precedent;
 mod query;
 
 #[derive(Parser)]
@@ -185,6 +186,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gaps_json = serde_json::to_string_pretty(&timeline_gaps)?;
     std::fs::write(&gaps_path, &gaps_json)?;
 
+    // Stage 7: Precedent matching
+    println!("[7/8] Matching precedents...");
+    let precedent_matches = precedent::match_precedents(&findings);
+    println!("      {} precedent matches", precedent_matches.len());
+    if !precedent_matches.is_empty() {
+        println!("{}", precedent::summarize_precedents(&precedent_matches));
+    }
+
+    let precedent_path = cli.output.join("precedents.json");
+    let precedent_json = serde_json::to_string_pretty(&precedent_matches)?;
+    std::fs::write(&precedent_path, &precedent_json)?;
+
+    // Legal brief outline
+    let brief = precedent::build_factor_brief(&precedent_matches, &findings);
+    let brief_path = cli.output.join("legal_brief_outline.txt");
+    std::fs::write(&brief_path, &brief)?;
+    println!("Legal brief: {}", brief_path.display());
+
     if cli.json_only {
         println!();
         println!("JSON-only mode. Run without --json-only for PDF generation.");
@@ -192,9 +211,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    // Stage 7: Build exhibit book + forms
+    // Stage 8: Build exhibit book + forms
     println!();
-    println!("[7/7] Building exhibit book...");
+    println!("[8/8] Building exhibit book...");
     let exhibit_path = exhibit::build_exhibit_book(
         &findings,
         &contradictions,
@@ -228,11 +247,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!();
     println!("Filing package ready at: {}", cli.output.display());
-    println!("  findings.json         — all {} findings", findings.len());
-    println!("  threads.json          — {} conversation threads", threads.len());
-    println!("  contradictions.json   — {} contradictions", contradictions.len());
-    println!("  gaps.json             — {} timeline gaps", timeline_gaps.len());
-    println!("  timeline.csv          — spreadsheet timeline");
+    println!("  findings.json           — all {} findings", findings.len());
+    println!("  threads.json            — {} conversation threads", threads.len());
+    println!("  contradictions.json     — {} contradictions", contradictions.len());
+    println!("  gaps.json               — {} timeline gaps", timeline_gaps.len());
+    println!("  precedents.json         — {} precedent matches", precedent_matches.len());
+    println!("  legal_brief_outline.txt — factor-by-factor brief");
+    println!("  timeline.csv            — spreadsheet timeline");
     println!("  PLAINTIFF_EXHIBIT_BOOK.pdf");
     println!();
     println!("Run with --query to explore findings interactively.");
