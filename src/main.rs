@@ -12,6 +12,8 @@ mod exhibit;
 mod forms;
 mod precedent;
 mod query;
+mod filing;
+mod cite_verify;
 
 #[derive(Parser)]
 #[command(name = "illbethejudgeofthat")]
@@ -227,6 +229,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     println!("      {}", exhibit_path.display());
 
+    // Stage 9: Citation verification
+    println!("[9/10] Verifying citations...");
+    let cite_checks = cite_verify::verify_all(&precedent_matches);
+    cite_verify::print_report(&cite_checks);
+    let cite_path = cli.output.join("citation_verification.json");
+    std::fs::write(&cite_path, serde_json::to_string_pretty(&cite_checks)?)?;
+
+    // Stage 10: Generate court filings
+    println!();
+    println!("[10/10] Generating court filings...");
+    let filing_ctx = filing::FilingContext {
+        plaintiff: cli.plaintiff.clone(),
+        defendant: cli.defendant.clone(),
+        case_number: cli.case_number.clone().unwrap_or_else(|| "____________".into()),
+        county: cli.county.clone(),
+        court: format!("Circuit Court for {} County", cli.county),
+        findings: findings.clone(),
+        precedents: precedent_matches.clone(),
+        contradictions: contradictions.clone(),
+        filing_type: filing::FilingType::MotionModifyCustody,
+    };
+    match filing::generate_filing(&filing_ctx, &cli.output) {
+        Ok(path) => println!("      {}", path.display()),
+        Err(e) => eprintln!("      filing error: {}", e),
+    }
+
+    // Also generate memorandum in support
+    let memo_ctx = filing::FilingContext {
+        filing_type: filing::FilingType::MemorandumInSupport,
+        ..filing::FilingContext {
+            plaintiff: cli.plaintiff.clone(),
+            defendant: cli.defendant.clone(),
+            case_number: cli.case_number.clone().unwrap_or_else(|| "____________".into()),
+            county: cli.county.clone(),
+            court: format!("Circuit Court for {} County", cli.county),
+            findings: findings.clone(),
+            precedents: precedent_matches.clone(),
+            contradictions: contradictions.clone(),
+            filing_type: filing::FilingType::MemorandumInSupport,
+        }
+    };
+    match filing::generate_filing(&memo_ctx, &cli.output) {
+        Ok(path) => println!("      {}", path.display()),
+        Err(e) => eprintln!("      memo error: {}", e),
+    }
+
     if !cli.skip_forms {
         println!("      Generating court forms...");
         let court_forms = forms::generate_forms(
@@ -255,6 +303,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  legal_brief_outline.txt — factor-by-factor brief");
     println!("  timeline.csv            — spreadsheet timeline");
     println!("  PLAINTIFF_EXHIBIT_BOOK.pdf");
+    println!("  MOTION_MODIFY_CUSTODY.pdf   — filed-ready motion");
+    println!("  MEMORANDUM_IN_SUPPORT.pdf    — supporting memorandum");
+    println!("  citation_verification.json   — all citations verified");
+    println!();
+    let bad_cites = cite_checks.iter().filter(|c| matches!(c.status, cite_verify::CitationStatus::BadFormat | cite_verify::CitationStatus::NotFound)).count();
+    if bad_cites > 0 {
+        println!("WARNING: {} citation(s) need manual verification before filing.", bad_cites);
+    }
     println!();
     println!("Run with --query to explore findings interactively.");
     println!("At your service.");
