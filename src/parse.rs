@@ -6,11 +6,10 @@ use crate::ingest::Email;
 pub enum ParseError {
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
-    #[error("{0}")]
-    Other(String),
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // fields used by analyze.rs attachment linking
 pub struct ExtractedAttachment {
     pub email_index: usize,
     pub filename: String,
@@ -30,7 +29,9 @@ pub fn extract_attachments(
 
     for email in emails {
         for attachment in &email.attachments {
-            let path = attach_dir.join(&attachment.filename);
+            let safe_name = format!("{}_{}", email.index,
+                attachment.filename.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_"));
+            let path = attach_dir.join(&safe_name);
             std::fs::write(&path, &attachment.data)?;
             extracted.push(ExtractedAttachment {
                 email_index: email.index,

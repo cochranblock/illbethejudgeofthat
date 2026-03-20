@@ -1,17 +1,22 @@
 use clap::Parser;
 use std::path::PathBuf;
+use chrono::NaiveDate;
 
 mod ingest;
 mod parse;
+mod thread;
 mod analyze;
+mod contradict;
+mod gaps;
 mod exhibit;
 mod forms;
+mod query;
 
 #[derive(Parser)]
 #[command(name = "illbethejudgeofthat")]
-#[command(about = "Pro se custody case builder. Takeout → Courtroom.")]
+#[command(about = "Pro se custody case builder. Takeout to courtroom.")]
 struct Cli {
-    /// Path to Google Takeout mbox file or extracted directory
+    /// Path to Google Takeout mbox file
     #[arg(short, long)]
     input: PathBuf,
 
@@ -39,6 +44,10 @@ struct Cli {
     #[arg(long, default_value = "weekly-thursday")]
     schedule: String,
 
+    /// Known Thursday when plaintiff has custody (YYYY-MM-DD)
+    #[arg(long, default_value = "2025-01-02")]
+    custody_start: String,
+
     /// Case number
     #[arg(long)]
     case_number: Option<String>,
@@ -50,50 +59,146 @@ struct Cli {
     /// County
     #[arg(long, default_value = "Anne Arundel")]
     county: String,
+
+    /// Export findings as JSON only (skip PDF/form generation)
+    #[arg(long)]
+    json_only: bool,
+
+    /// Export raw parsed emails as JSON
+    #[arg(long)]
+    dump_emails: bool,
+
+    /// Skip court form generation
+    #[arg(long)]
+    skip_forms: bool,
+
+    /// Enter interactive query mode (requires prior run)
+    #[arg(long)]
+    query: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
-    println!("illbethejudgeofthat v0.1.0");
-    println!("========================");
+    // Query mode: load existing data and enter REPL
+    if cli.query {
+        return query::run_query(&cli.output);
+    }
+
+    let custody_start = NaiveDate::parse_from_str(&cli.custody_start, "%Y-%m-%d")
+        .unwrap_or_else(|_| {
+            eprintln!("warn: invalid --custody-start, using 2025-01-02");
+            NaiveDate::from_ymd_opt(2025, 1, 2).unwrap()
+        });
+
+    println!("illbethejudgeofthat v0.3.0");
+    println!("=========================");
     println!();
-    println!("Plaintiff:  {}", cli.plaintiff);
-    println!("Defendant:  {}", cli.defendant);
-    println!("Children:   {}", cli.children);
-    println!("Input:      {}", cli.input.display());
-    println!("Output:     {}", cli.output.display());
-    println!("State:      {}", cli.state);
-    println!("County:     {}", cli.county);
+    println!("Plaintiff:      {}", cli.plaintiff);
+    println!("Defendant:      {}", cli.defendant);
+    println!("Children:       {}", cli.children);
+    println!("Custody start:  {}", custody_start);
+    println!("Input:          {}", cli.input.display());
+    println!("Output:         {}", cli.output.display());
+    println!("State:          {}", cli.state);
+    println!("County:         {}", cli.county);
     println!();
 
+    std::fs::create_dir_all(&cli.output)?;
+
     // Stage 1: Ingest
-    println!("[1/5] Ingesting email archive...");
+    println!("[1/7] Ingesting email archive...");
     let emails = ingest::ingest_mbox(&cli.input)?;
     println!("      {} emails parsed", emails.len());
 
+    if cli.dump_emails {
+        let dump_path = cli.output.join("emails_raw.json");
+        let json = serde_json::to_string_pretty(&emails)?;
+        std::fs::write(&dump_path, &json)?;
+        println!("      emails dumped to {}", dump_path.display());
+    }
+
     // Stage 2: Parse attachments
-    println!("[2/5] Extracting attachments...");
+    println!("[2/7] Extracting attachments...");
     let attachments = parse::extract_attachments(&emails, &cli.output)?;
     println!("      {} attachments extracted", attachments.len());
 
-    // Stage 3: Analyze
-    println!("[3/5] Analyzing for inconsistencies...");
+    // Stage 3: Thread reconstruction
+    println!("[3/7] Reconstructing threads...");
+    let threads = thread::reconstruct_threads(&emails);
+    println!("      {} threads from {} emails", threads.len(), emails.len());
+    let thread_summary = thread::summarize_threads(&threads);
+    println!("{}", thread_summary);
+
+    let threads_path = cli.output.join("threads.json");
+    let threads_json = serde_json::to_string_pretty(&threads)?;
+    std::fs::write(&threads_path, &threads_json)?;
+
+    // Stage 4: Analyze
+    println!("[4/7] Analyzing for findings...");
     let findings = analyze::analyze(
         &emails,
         &attachments,
         &cli.plaintiff,
         &cli.defendant,
         &cli.children,
-        &cli.schedule,
+        custody_start,
     )?;
     println!("      {} findings identified", findings.len());
+    println!();
+    println!("{}", analyze::summarize_findings(&findings));
 
-    // Stage 4: Build exhibit book
-    println!("[4/5] Building exhibit book...");
+    // Export findings JSON
+    let findings_path = cli.output.join("findings.json");
+    let findings_json = serde_json::to_string_pretty(&findings)?;
+    std::fs::write(&findings_path, &findings_json)?;
+    println!("Findings: {}", findings_path.display());
+
+    // Export timeline CSV
+    let timeline_path = cli.output.join("timeline.csv");
+    export_timeline_csv(&findings, &timeline_path)?;
+    println!("Timeline: {}", timeline_path.display());
+
+    // Stage 5: Contradiction detection
+    println!();
+    println!("[5/7] Detecting contradictions...");
+    let contradictions = contradict::detect_contradictions(&findings, &threads);
+    println!("      {} contradictions found", contradictions.len());
+    if !contradictions.is_empty() {
+        println!("{}", contradict::summarize_contradictions(&contradictions));
+    }
+
+    let contra_path = cli.output.join("contradictions.json");
+    let contra_json = serde_json::to_string_pretty(&contradictions)?;
+    std::fs::write(&contra_path, &contra_json)?;
+
+    // Stage 6: Gap detection
+    println!("[6/7] Detecting timeline gaps...");
+    let timeline_gaps = gaps::detect_gaps(&emails, &findings, &threads);
+    println!("      {} gaps found", timeline_gaps.len());
+    if !timeline_gaps.is_empty() {
+        println!("{}", gaps::summarize_gaps(&timeline_gaps));
+    }
+
+    let gaps_path = cli.output.join("gaps.json");
+    let gaps_json = serde_json::to_string_pretty(&timeline_gaps)?;
+    std::fs::write(&gaps_path, &gaps_json)?;
+
+    if cli.json_only {
+        println!();
+        println!("JSON-only mode. Run without --json-only for PDF generation.");
+        println!("Run with --query to explore findings interactively.");
+        return Ok(());
+    }
+
+    // Stage 7: Build exhibit book + forms
+    println!();
+    println!("[7/7] Building exhibit book...");
     let exhibit_path = exhibit::build_exhibit_book(
         &findings,
+        &contradictions,
+        &timeline_gaps,
         &cli.output,
         &cli.plaintiff,
         &cli.defendant,
@@ -103,27 +208,76 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     println!("      {}", exhibit_path.display());
 
-    // Stage 5: Generate forms
-    println!("[5/5] Generating court forms...");
-    let forms = forms::generate_forms(
-        &cli.output,
-        &cli.plaintiff,
-        &cli.defendant,
-        &cli.children,
-        &cli.dobs,
-        &cli.case_number,
-        &cli.county,
-        &cli.state,
-    )?;
-    for form in &forms {
-        println!("      {}", form.display());
+    if !cli.skip_forms {
+        println!("      Generating court forms...");
+        let court_forms = forms::generate_forms(
+            &cli.output,
+            &cli.plaintiff,
+            &cli.defendant,
+            &cli.children,
+            &cli.dobs,
+            &cli.case_number,
+            &cli.county,
+            &cli.state,
+            false,
+        )?;
+        for form in &court_forms {
+            println!("      {}", form.display());
+        }
     }
 
     println!();
     println!("Filing package ready at: {}", cli.output.display());
-    println!("Sign, upload to Tyler, serve the other party.");
+    println!("  findings.json         — all {} findings", findings.len());
+    println!("  threads.json          — {} conversation threads", threads.len());
+    println!("  contradictions.json   — {} contradictions", contradictions.len());
+    println!("  gaps.json             — {} timeline gaps", timeline_gaps.len());
+    println!("  timeline.csv          — spreadsheet timeline");
+    println!("  PLAINTIFF_EXHIBIT_BOOK.pdf");
     println!();
+    println!("Run with --query to explore findings interactively.");
     println!("At your service.");
 
     Ok(())
+}
+
+fn export_timeline_csv(
+    findings: &[analyze::Finding],
+    path: &std::path::Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut csv = String::new();
+    csv.push_str("Exhibit#,Date,Category,CustodyWeek,Child,From,Subject,Summary,HighlightedText\n");
+
+    for f in findings {
+        let date = f.parsed_date.as_deref().unwrap_or(&f.date);
+        let custody = match &f.custody_week {
+            Some(analyze::CustodyParent::Plaintiff) => "Plaintiff",
+            Some(analyze::CustodyParent::Defendant) => "Defendant",
+            _ => "Unknown",
+        };
+        let child = f.child_name.as_deref().unwrap_or("");
+        let highlights = f.highlighted_text.join(" | ");
+
+        csv.push_str(&format!(
+            "{},{},\"{}\",{},\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"\n",
+            f.exhibit_number.unwrap_or(0),
+            date,
+            f.category,
+            custody,
+            escape_csv(child),
+            escape_csv(&f.from),
+            escape_csv(&f.subject),
+            escape_csv(&f.summary),
+            escape_csv(&highlights),
+        ));
+    }
+
+    std::fs::write(path, &csv)?;
+    Ok(())
+}
+
+fn escape_csv(s: &str) -> String {
+    s.replace('"', "\"\"")
+        .replace('\n', " ")
+        .replace('\r', "")
 }
