@@ -20,6 +20,7 @@ const MARGIN: f32 = 25.4; // 1 inch in mm
 const LINE_H: f32 = 5.0;  // ~14pt in mm
 
 /// Generate jurisdiction-specific court forms
+#[allow(clippy::too_many_arguments)] // court filing fields are irreducible
 pub fn generate_forms(
     output_dir: &Path,
     plaintiff: &str,
@@ -691,7 +692,7 @@ fn generate_cc_dr_055(
     write_text(&layer, &font, 10.0, 120.0, y, "________________________________");
     y -= LINE_H;
     write_text(&layer, &font, 9.0, x, y, &format!("{}, Pro Se", plaintiff));
-    write_text(&layer, &font, 9.0, 120.0, y, &format!("{}", defendant));
+    write_text(&layer, &font, 9.0, 120.0, y, defendant);
     y -= LINE_H;
     write_text(&layer, &font, 9.0, x, y, &format!("Date: {}", today));
     write_text(&layer, &font, 9.0, 120.0, y, "Date: ____________");

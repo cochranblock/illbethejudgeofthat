@@ -188,7 +188,7 @@ pub fn generate_filing(
         write_centered(&layer, &bold, y, "CERTIFICATE OF SERVICE", 12.0);
         y -= DOUBLE_SPACE;
         write_line(&layer, &font, y,
-            &format!("     I hereby certify that on this ___ day of _______, 20__, a copy of the"),
+            "     I hereby certify that on this ___ day of _______, 20__, a copy of the",
             11.0);
         y -= LINE_H;
         write_line(&layer, &font, y,

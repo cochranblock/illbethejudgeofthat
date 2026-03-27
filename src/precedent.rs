@@ -71,7 +71,7 @@ fn build_md_precedents() -> Vec<Precedent> {
             citation: "306 Md. 290 (1986)".into(),
             year: 1986,
             court: "Court of Appeals of Maryland".into(),
-            holding: "Established the comprehensive list of factors courts must consider in custody determinations. No single factor is dispositive; courts must weigh all relevant factors.".into(),
+            holding: "Established the full list of factors courts must consider in custody determinations. No single factor is dispositive; courts must weigh all relevant factors.".into(),
             relevance: "Foundation case for all MD custody modifications. Every best interest factor traced to this decision.".into(),
             factors: vec![
                 BestInterestFactor::FitnessOfParents,

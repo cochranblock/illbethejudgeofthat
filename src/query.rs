@@ -30,7 +30,7 @@ pub fn run_query(output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
             break;
         }
 
-        let parts: Vec<&str> = line.trim().split_whitespace().collect();
+        let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.is_empty() { continue; }
 
         match parts[0] {

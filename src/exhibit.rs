@@ -23,6 +23,7 @@ const FONT_SIZE_TITLE: f32 = 18.0;
 const MAX_CHARS_PER_LINE: usize = 80;
 
 /// Build a court-ready exhibit book PDF from findings
+#[allow(clippy::too_many_arguments)] // court filing fields are irreducible
 pub fn build_exhibit_book(
     findings: &[Finding],
     contradictions: &[Contradiction],
@@ -60,7 +61,7 @@ pub fn build_exhibit_book(
 
     // === EXHIBIT PAGES ===
     for finding in findings {
-        let (pg, ly) = doc.add_page(Mm(215.9), Mm(279.4), &format!("Exhibit {}", finding.exhibit_number.unwrap_or(0)));
+        let (pg, ly) = doc.add_page(Mm(215.9), Mm(279.4), format!("Exhibit {}", finding.exhibit_number.unwrap_or(0)));
         let layer = doc.get_page(pg).get_layer(ly);
         render_finding_page(&layer, &font, &font_bold, finding);
     }
@@ -87,6 +88,7 @@ pub fn build_exhibit_book(
     Ok(output_path)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_cover(
     layer: &PdfLayerReference,
     font: &IndirectFontRef,

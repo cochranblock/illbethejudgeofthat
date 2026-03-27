@@ -190,6 +190,7 @@ pub fn analyze(
     let mut findings = Vec::new();
     let custody = CustodySchedule::new(custody_start);
     let children_names: Vec<String> = children.split(',').map(|s| s.trim().to_lowercase()).collect();
+    let weight_re = Regex::new(r"(?i)(\d{2,3})\s*(lbs?|pounds?)").unwrap();
 
     for email in emails {
         let body_lower = email.body.to_lowercase();
@@ -266,7 +267,6 @@ pub fn analyze(
         }
 
         // === WEIGHT / HEALTH ===
-        let weight_re = Regex::new(r"(?i)(\d{2,3})\s*(lbs?|pounds?)").unwrap();
         if weight_re.is_match(&email.body) {
             let highlights: Vec<String> = weight_re
                 .find_iter(&email.body)
