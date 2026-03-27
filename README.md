@@ -16,15 +16,59 @@ Pro se custody case builder. Google Takeout → Court-ready exhibit book + fille
 
 ## What it does
 
-1. Ingests email exports (mbox, Google Takeout)
-2. Parses emails + extracts attachments
-3. AI reads handwritten school forms (vision/OCR)
-4. Cross-references evidence against custody schedules
-5. Detects inconsistencies, admissions, timeline gaps
-6. Maps evidence to jurisdiction-specific custody factors
-7. Generates numbered exhibit book (PDF, under court file limits)
-8. Fills official court forms programmatically
-9. Produces filing-ready package with step-by-step e-filing instructions
+1. **Ingest** — parses mbox/Google Takeout email archives
+2. **Extract** — pulls attachments from MIME messages
+3. **Thread** — reconstructs conversation threads (Gmail IDs → In-Reply-To → subject matching)
+4. **Analyze** — detects 19 custody-relevant finding categories (IEP violations, alienation, food records, etc.)
+5. **Contradict** — cross-references school reports against parent claims
+6. **Gaps** — detects missing daily reports, communication silences, abandoned threads
+7. **Precedent** — matches findings to 17 Maryland case citations
+8. **Exhibit** — builds numbered PDF exhibit book (cover, TOC, exhibits, appendices)
+9. **Cite Verify** — checks all case citations against known Maryland case law
+10. **Filing** — generates Motion to Modify Custody + Memorandum in Support with exhibit/citation tracing
+
+Also includes: court form generation (MD CC-DR-007), interactive query REPL (`--query`), and a Mixture of Experts legal prediction engine (`legal/`).
+
+## Usage
+
+```bash
+cargo run --release -- \
+  --input path/to/takeout.mbox \
+  --plaintiff "Your Name" \
+  --defendant "Other Parent" \
+  --children "Child1,Child2" \
+  --dobs "01/15/2018,03/22/2020" \
+  --state MD \
+  --county "Anne Arundel"
+```
+
+Key flags:
+- `--json-only` — export findings as JSON, skip PDF generation
+- `--dump-emails` — export raw parsed emails
+- `--skip-forms` — skip court form generation
+- `--query` — interactive REPL to explore findings from a prior run
+- `--case-number` — case number for court filings
+- `--custody-start` — known Thursday when plaintiff has custody (YYYY-MM-DD)
+- `--schedule` — custody schedule pattern (default: weekly-thursday)
+
+## Output
+
+All artifacts land in `./filing/` (or `--output`):
+
+| File | Description |
+|------|-------------|
+| `findings.json` | All findings with categories, custody week, IDEA tags |
+| `threads.json` | Reconstructed conversation threads |
+| `contradictions.json` | School-vs-parent contradictions |
+| `gaps.json` | Timeline gaps and silences |
+| `precedents.json` | Matched Maryland case law |
+| `legal_brief_outline.txt` | Factor-by-factor brief |
+| `timeline.csv` | Spreadsheet-friendly timeline |
+| `PLAINTIFF_EXHIBIT_BOOK.pdf` | Court-formatted exhibit book |
+| `MOTION_MODIFY_CUSTODY.pdf` | Filed-ready motion |
+| `MEMORANDUM_IN_SUPPORT.pdf` | Supporting memorandum |
+| `citation_verification.json` | Citation verification report |
+| `CC-DR-007_FILLED.pdf` | Filled court form (MD) |
 
 ## Built by a father who needed it.
 

@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             NaiveDate::from_ymd_opt(2025, 1, 2).unwrap()
         });
 
-    println!("illbethejudgeofthat v0.3.0");
+    println!("illbethejudgeofthat v0.3.2");
     println!("=========================");
     println!();
     println!("Plaintiff:      {}", cli.plaintiff);
@@ -111,7 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(&cli.output)?;
 
     // Stage 1: Ingest
-    println!("[1/7] Ingesting email archive...");
+    println!("[1/10] Ingesting email archive...");
     let emails = ingest::ingest_mbox(&cli.input)?;
     println!("      {} emails parsed", emails.len());
 
@@ -123,12 +123,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Stage 2: Parse attachments
-    println!("[2/7] Extracting attachments...");
+    println!("[2/10] Extracting attachments...");
     let attachments = parse::extract_attachments(&emails, &cli.output)?;
     println!("      {} attachments extracted", attachments.len());
 
     // Stage 3: Thread reconstruction
-    println!("[3/7] Reconstructing threads...");
+    println!("[3/10] Reconstructing threads...");
     let threads = thread::reconstruct_threads(&emails);
     println!("      {} threads from {} emails", threads.len(), emails.len());
     let thread_summary = thread::summarize_threads(&threads);
@@ -139,7 +139,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::write(&threads_path, &threads_json)?;
 
     // Stage 4: Analyze
-    println!("[4/7] Analyzing for findings...");
+    println!("[4/10] Analyzing for findings...");
     let findings = analyze::analyze(
         &emails,
         &attachments,
@@ -165,7 +165,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Stage 5: Contradiction detection
     println!();
-    println!("[5/7] Detecting contradictions...");
+    println!("[5/10] Detecting contradictions...");
     let contradictions = contradict::detect_contradictions(&findings, &threads);
     println!("      {} contradictions found", contradictions.len());
     if !contradictions.is_empty() {
@@ -177,7 +177,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::write(&contra_path, &contra_json)?;
 
     // Stage 6: Gap detection
-    println!("[6/7] Detecting timeline gaps...");
+    println!("[6/10] Detecting timeline gaps...");
     let timeline_gaps = gaps::detect_gaps(&emails, &findings, &threads);
     println!("      {} gaps found", timeline_gaps.len());
     if !timeline_gaps.is_empty() {
@@ -189,7 +189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::write(&gaps_path, &gaps_json)?;
 
     // Stage 7: Precedent matching
-    println!("[7/8] Matching precedents...");
+    println!("[7/10] Matching precedents...");
     let precedent_matches = precedent::match_precedents(&findings);
     println!("      {} precedent matches", precedent_matches.len());
     if !precedent_matches.is_empty() {
@@ -213,9 +213,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    // Stage 8: Build exhibit book + forms
+    // Stage 8: Build exhibit book
     println!();
-    println!("[8/8] Building exhibit book...");
+    println!("[8/10] Building exhibit book...");
     let exhibit_path = exhibit::build_exhibit_book(
         &findings,
         &contradictions,

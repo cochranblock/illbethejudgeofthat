@@ -31,7 +31,7 @@ flowchart TD
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | 3,642 |
+| Lines of Rust | 5,481 |
 | Pipeline stages | 10 (ingest → forms) |
 | Finding categories | 19 (IEP violation, alienation, food record, behavioral incident, etc.) |
 | Contradiction types | 5 (school vs. parent, food refusal, attendance, custody week, behavioral) |
@@ -51,6 +51,8 @@ flowchart TD
 | Timeline Gap Analysis | Detects missing daily reports, communication silences, thread abandonment |
 | Precedent Matching | 17 Maryland cases mapped to findings → automatic brief with case law + exhibit cross-refs |
 | MoE Legal Prediction | 4-expert architecture with gating network + challenge layer (flags weaknesses) |
+| Citation Verifier | 20 known MD cases checked — flags bad format, missing, or unverified citations |
+| Filing Generator | Motion to Modify Custody + Memorandum in Support with exhibit/citation cross-refs |
 | Exhibit Book PDF | Cover, TOC, numbered exhibits, contradiction summaries, gap analysis — court-formatted |
 | Court Form Generation | Filled MD CC-DR-007, Motion to Modify Custody, Memorandum in Support |
 
@@ -58,8 +60,12 @@ flowchart TD
 
 ```bash
 cargo build --release -p illbethejudgeofthat
-cargo run --release -- --takeout path/to/takeout.mbox --jurisdiction MD
-ls filing/   # findings.json, contradictions.json, gaps.json, PLAINTIFF_EXHIBIT_BOOK.pdf
+cargo run --release -- \
+  --input path/to/takeout.mbox \
+  --plaintiff "Name" --defendant "Name" \
+  --children "Child1" --dobs "01/15/2018" \
+  --state MD --county "Anne Arundel"
+ls filing/   # findings.json, contradictions.json, gaps.json, PLAINTIFF_EXHIBIT_BOOK.pdf, MOTION_MODIFY_CUSTODY.pdf
 ```
 
 ---
