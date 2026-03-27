@@ -306,6 +306,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  MOTION_MODIFY_CUSTODY.pdf   — filed-ready motion");
     println!("  MEMORANDUM_IN_SUPPORT.pdf    — supporting memorandum");
     println!("  CC-DC-CV-001_CASE_INFO_REPORT.pdf — required case info report");
+    println!("  CC-DR-004_FINANCIAL_STATEMENT.pdf — income/expense disclosure");
+    println!("  CC-DR-055_PARENTING_PLAN.pdf      — proposed custody schedule");
     println!("  citation_verification.json   — all citations verified");
     println!();
     let bad_cites = cite_checks.iter().filter(|c| matches!(c.status, cite_verify::CitationStatus::BadFormat | cite_verify::CitationStatus::NotFound)).count();
