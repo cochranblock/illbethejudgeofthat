@@ -459,6 +459,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "exopack"
+version = "0.1.0"
+source = "git+https://github.com/cochranblock/exopack#d099d7f41a9ce97bb7d2091d7fcf3d25f54a4c96"
+
+[[package]]
 name = "exr"
 version = "1.74.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -583,11 +588,12 @@ dependencies = [
 
 [[package]]
 name = "illbethejudgeofthat"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "base64",
  "chrono",
  "clap",
+ "exopack",
  "image",
  "mailparse",
  "printpdf",

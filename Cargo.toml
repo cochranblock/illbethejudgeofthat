@@ -1,9 +1,27 @@
+# Unlicense — cochranblock.org
+# Contributors: GotEmCoach, KOVA, Claude Opus 4.6
+
 [package]
 name = "illbethejudgeofthat"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 description = "Pro se custody case builder. Google Takeout to courtroom in one evening."
 license = "Unlicense"
+default-run = "illbethejudgeofthat"
+
+# tests = exopack for TRIPLE SIMS quality gate. Release strips both.
+[features]
+default = []
+tests = ["exopack"]
+
+[[bin]]
+name = "illbethejudgeofthat"
+path = "src/main.rs"
+
+[[bin]]
+name = "illbethejudgeofthat-test"
+path = "src/bin/illbethejudgeofthat-test.rs"
+required-features = ["tests"]
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
@@ -17,5 +35,13 @@ thiserror = "2"
 image = "0.25"
 printpdf = "0.7"
 base64 = "0.22"
+exopack = { git = "https://github.com/cochranblock/exopack", optional = true, features = ["triple_sims"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
 
 [workspace]
