@@ -2,12 +2,12 @@ use std::path::{Path, PathBuf};
 use std::io::BufWriter;
 use thiserror::Error;
 use printpdf::*;
-use crate::analyze::Finding;
-use crate::contradict::Contradiction;
-use crate::gaps::TimelineGap;
+use crate::analyze::T6;
+use crate::contradict::T10;
+use crate::gaps::T12;
 
 #[derive(Error, Debug)]
-pub enum ExhibitError {
+pub enum T17 {
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
     #[error("pdf error: {0}")]
@@ -24,17 +24,17 @@ const MAX_CHARS_PER_LINE: usize = 80;
 
 /// Build a court-ready exhibit book PDF from findings
 #[allow(clippy::too_many_arguments)] // court filing fields are irreducible
-pub fn build_exhibit_book(
-    findings: &[Finding],
-    contradictions: &[Contradiction],
-    gaps: &[TimelineGap],
+pub fn f14(
+    findings: &[T6],
+    contradictions: &[T10],
+    gaps: &[T12],
     output_dir: &Path,
     plaintiff: &str,
     defendant: &str,
     case_number: &Option<String>,
     county: &str,
     state: &str,
-) -> Result<PathBuf, ExhibitError> {
+) -> Result<PathBuf, T17> {
     let output_path = output_dir.join("PLAINTIFF_EXHIBIT_BOOK.pdf");
     std::fs::create_dir_all(output_dir)?;
 
@@ -46,9 +46,9 @@ pub fn build_exhibit_book(
     );
 
     let font = doc.add_builtin_font(BuiltinFont::TimesRoman)
-        .map_err(|e| ExhibitError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T17::Pdf(format!("{}", e)))?;
     let font_bold = doc.add_builtin_font(BuiltinFont::TimesBold)
-        .map_err(|e| ExhibitError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T17::Pdf(format!("{}", e)))?;
 
     // === COVER PAGE ===
     let layer = doc.get_page(page1).get_layer(layer1);
@@ -83,7 +83,7 @@ pub fn build_exhibit_book(
     // Save
     let file = std::fs::File::create(&output_path)?;
     doc.save(&mut BufWriter::new(file))
-        .map_err(|e| ExhibitError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T17::Pdf(format!("{}", e)))?;
 
     Ok(output_path)
 }
@@ -130,7 +130,7 @@ fn render_toc(
     layer: &PdfLayerReference,
     font: &IndirectFontRef,
     font_bold: &IndirectFontRef,
-    findings: &[Finding],
+    findings: &[T6],
 ) {
     let mut y = PAGE_H - MARGIN;
     let x = MARGIN;
@@ -163,7 +163,7 @@ fn render_finding_page(
     layer: &PdfLayerReference,
     font: &IndirectFontRef,
     font_bold: &IndirectFontRef,
-    finding: &Finding,
+    finding: &T6,
 ) {
     let mut y = PAGE_H - MARGIN;
     let x = MARGIN;
@@ -176,8 +176,8 @@ fn render_finding_page(
     // Metadata
     let date = finding.parsed_date.as_deref().unwrap_or(&finding.date);
     let custody = match &finding.custody_week {
-        Some(crate::analyze::CustodyParent::Plaintiff) => "Plaintiff's Week",
-        Some(crate::analyze::CustodyParent::Defendant) => "Defendant's Week",
+        Some(crate::analyze::T8::Plaintiff) => "Plaintiff's Week",
+        Some(crate::analyze::T8::Defendant) => "Defendant's Week",
         _ => "Unknown",
     };
 
@@ -242,7 +242,7 @@ fn render_contradiction_section(
     layer: &PdfLayerReference,
     font: &IndirectFontRef,
     font_bold: &IndirectFontRef,
-    contradictions: &[Contradiction],
+    contradictions: &[T10],
 ) {
     let mut y = PAGE_H - MARGIN;
     let x = MARGIN;
@@ -271,7 +271,7 @@ fn render_gap_section(
     layer: &PdfLayerReference,
     font: &IndirectFontRef,
     font_bold: &IndirectFontRef,
-    gaps: &[TimelineGap],
+    gaps: &[T12],
 ) {
     let mut y = PAGE_H - MARGIN;
     let x = MARGIN;

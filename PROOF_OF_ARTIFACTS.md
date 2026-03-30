@@ -31,7 +31,7 @@ flowchart TD
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | 5,481 |
+| Lines of Rust | 4,482 |
 | Pipeline stages | 10 (ingest → forms) |
 | Finding categories | 19 (IEP violation, alienation, food record, behavioral incident, etc.) |
 | Contradiction types | 5 (school vs. parent, food refusal, attendance, custody week, behavioral) |

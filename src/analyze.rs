@@ -2,18 +2,18 @@ use thiserror::Error;
 use serde::{Deserialize, Serialize};
 use chrono::{Datelike, NaiveDate, NaiveDateTime};
 use regex::Regex;
-use crate::ingest::Email;
-use crate::parse::ExtractedAttachment;
+use crate::ingest::T0;
+use crate::parse::T3;
 
 #[derive(Error, Debug)]
-pub enum AnalyzeError {
+pub enum T9 {
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Finding {
-    pub category: FindingCategory,
+pub struct T6 {
+    pub category: T7,
     pub date: String,
     pub parsed_date: Option<String>,
     pub summary: String,
@@ -25,19 +25,19 @@ pub struct Finding {
     pub from: String,
     pub to: String,
     pub subject: String,
-    pub custody_week: Option<CustodyParent>,
+    pub custody_week: Option<T8>,
     pub child_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum CustodyParent {
+pub enum T8 {
     Plaintiff,
     Defendant,
     Unknown,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum FindingCategory {
+pub enum T7 {
     CustodyInterference,
     FoodRecord,
     HealthConcern,
@@ -60,7 +60,7 @@ pub enum FindingCategory {
     AdmissionAgainstInterest,
 }
 
-impl std::fmt::Display for FindingCategory {
+impl std::fmt::Display for T7 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::CustodyInterference => write!(f, "Custody Interference"),
@@ -97,20 +97,20 @@ impl CustodySchedule {
         Self { plaintiff_start: start }
     }
 
-    fn who_has_custody(&self, date: NaiveDate) -> CustodyParent {
+    fn who_has_custody(&self, date: NaiveDate) -> T8 {
         let days_since_thursday = (date.weekday().num_days_from_monday() + 4) % 7;
         let this_thursday = date - chrono::Duration::days(days_since_thursday as i64);
         let weeks_diff = (this_thursday - self.plaintiff_start).num_weeks();
         if weeks_diff % 2 == 0 {
-            CustodyParent::Plaintiff
+            T8::Plaintiff
         } else {
-            CustodyParent::Defendant
+            T8::Defendant
         }
     }
 }
 
 /// Parse email Date header into NaiveDate (public for thread.rs)
-pub fn parse_email_date(date_str: &str) -> Option<NaiveDate> {
+pub fn f4(date_str: &str) -> Option<NaiveDate> {
     let formats = [
         "%a, %d %b %Y %H:%M:%S %z",
         "%a, %d %b %Y %H:%M:%S",
@@ -146,7 +146,7 @@ pub fn parse_email_date(date_str: &str) -> Option<NaiveDate> {
 }
 
 /// Check if email sender matches a person (case-insensitive partial match)
-fn sender_is(email: &Email, name_or_addr: &str) -> bool {
+fn sender_is(email: &T0, name_or_addr: &str) -> bool {
     let from_lower = email.from.to_lowercase();
     let check = name_or_addr.to_lowercase();
     from_lower.contains(&check)
@@ -162,7 +162,7 @@ fn body_has_word(body_lower: &str, word: &str) -> bool {
 }
 
 /// Find attachment paths for an email index
-fn find_attachment_for_email(email_index: usize, attachments: &[ExtractedAttachment]) -> Option<String> {
+fn find_attachment_for_email(email_index: usize, attachments: &[T3]) -> Option<String> {
     attachments.iter()
         .find(|a| a.email_index == email_index)
         .map(|a| a.path.display().to_string())
@@ -179,14 +179,14 @@ fn detect_child(body_lower: &str, subject_lower: &str, children: &[String]) -> O
 }
 
 /// Analyze emails for custody-relevant findings
-pub fn analyze(
-    emails: &[Email],
-    attachments: &[ExtractedAttachment],
+pub fn f5(
+    emails: &[T0],
+    attachments: &[T3],
     plaintiff: &str,
     defendant: &str,
     children: &str,
     custody_start: NaiveDate,
-) -> Result<Vec<Finding>, AnalyzeError> {
+) -> Result<Vec<T6>, T9> {
     let mut findings = Vec::new();
     let custody = CustodySchedule::new(custody_start);
     let children_names: Vec<String> = children.split(',').map(|s| s.trim().to_lowercase()).collect();
@@ -195,13 +195,13 @@ pub fn analyze(
     for email in emails {
         let body_lower = email.body.to_lowercase();
         let subject_lower = email.subject.to_lowercase();
-        let date = parse_email_date(&email.date);
-        let custody_week = date.map(|d| custody.who_has_custody(d)).unwrap_or(CustodyParent::Unknown);
+        let date = f4(&email.date);
+        let custody_week = date.map(|d| custody.who_has_custody(d)).unwrap_or(T8::Unknown);
         let parsed_date_str = date.map(|d| d.format("%Y-%m-%d").to_string());
         let child = detect_child(&body_lower, &subject_lower, &children_names);
         let attachment_path = find_attachment_for_email(email.index, attachments);
 
-        let base = |cat: FindingCategory, summary: String, highlights: Vec<String>| Finding {
+        let base = |cat: T7, summary: String, highlights: Vec<String>| T6 {
             category: cat,
             date: email.date.clone(),
             parsed_date: parsed_date_str.clone(),
@@ -226,7 +226,7 @@ pub fn analyze(
             || body_lower.contains("would not eat")
         {
             findings.push(base(
-                FindingCategory::FoodRecord,
+                T7::FoodRecord,
                 "Child food refusal documented".into(),
                 extract_matching_lines(&email.body, &[
                     "refused all food", "refused food", "did not eat",
@@ -242,12 +242,12 @@ pub fn analyze(
             || body_lower.contains("brought from home")
         {
             findings.push(base(
-                FindingCategory::CustodyInterference,
+                T7::CustodyInterference,
                 format!("Food attribution — provided by defendant during {} custody",
                     match &custody_week {
-                        CustodyParent::Plaintiff => "plaintiff's",
-                        CustodyParent::Defendant => "defendant's",
-                        CustodyParent::Unknown => "unknown",
+                        T8::Plaintiff => "plaintiff's",
+                        T8::Defendant => "defendant's",
+                        T8::Unknown => "unknown",
                     }),
                 extract_matching_lines(&email.body, &[
                     "provided by mom", "mom provided", "mom sent", "brought from home",
@@ -260,7 +260,7 @@ pub fn analyze(
             || body_lower.contains("negative meal balance")
         {
             findings.push(base(
-                FindingCategory::FinancialChange,
+                T7::FinancialChange,
                 "Negative school meal balance notification".into(),
                 extract_matching_lines(&email.body, &["meal balance", "negative"]),
             ));
@@ -273,7 +273,7 @@ pub fn analyze(
                 .map(|m| m.as_str().to_string())
                 .collect();
             findings.push(base(
-                FindingCategory::WeightTracking,
+                T7::WeightTracking,
                 "Weight measurement documented".into(),
                 highlights,
             ));
@@ -286,7 +286,7 @@ pub fn analyze(
             && sender_is(email, "chimes.org")
         {
             findings.push(base(
-                FindingCategory::DailyReport,
+                T7::DailyReport,
                 format!("Chimes daily report: {}", email.subject),
                 vec![],
             ));
@@ -297,7 +297,7 @@ pub fn analyze(
             || subject_lower.contains("annual review")
             || body_has_word(&body_lower, "individualized education")
         {
-            let mut cat = FindingCategory::IepViolation;
+            let mut cat = T7::IepViolation;
             let mut summary = "IEP-related communication".to_string();
             let mut idea_tags: Vec<String> = Vec::new();
 
@@ -349,7 +349,7 @@ pub fn analyze(
                 summary = "IEP draft document exchange".into();
             } else if subject_lower.contains("invite") || subject_lower.contains("meeting") {
                 summary = "IEP meeting scheduled".into();
-                cat = FindingCategory::DailyReport;
+                cat = T7::DailyReport;
             }
 
             let highlights = extract_matching_lines(&email.body, &[
@@ -367,7 +367,7 @@ pub fn analyze(
             || subject_lower.contains("26-154")
         {
             findings.push(base(
-                FindingCategory::StateComplaint,
+                T7::StateComplaint,
                 "State complaint correspondence (26-154)".into(),
                 extract_matching_lines(&email.body, &["state complaint", "26-154", "complaint"]),
             ));
@@ -385,7 +385,7 @@ pub fn analyze(
             for phrase in &alienation_phrases {
                 if body_lower.contains(phrase) {
                     findings.push(base(
-                        FindingCategory::Alienation,
+                        T7::Alienation,
                         format!("Potential alienation: \"{}\" from defendant", phrase),
                         extract_matching_lines(&email.body, &[phrase]),
                     ));
@@ -402,7 +402,7 @@ pub fn analyze(
             || body_has_word(&body_lower, "divorce proceedings")
         {
             findings.push(base(
-                FindingCategory::CourtThreat,
+                T7::CourtThreat,
                 "Court/legal action referenced".into(),
                 extract_matching_lines(&email.body, &[
                     "going to court", "take you to court", "my lawyer",
@@ -424,7 +424,7 @@ pub fn analyze(
                 || sender_is(email, "bcps.org"))
         {
             findings.push(base(
-                FindingCategory::BehavioralIncident,
+                T7::BehavioralIncident,
                 "Behavioral incident reported by school".into(),
                 extract_matching_lines(&email.body, &[
                     "aggression", "meltdown", "tantrum",
@@ -438,7 +438,7 @@ pub fn analyze(
             && (subject_lower.contains("access") || subject_lower.contains("communication channels"))
         {
             findings.push(base(
-                FindingCategory::CommunicationBlock,
+                T7::CommunicationBlock,
                 "Communication access restriction".into(),
                 vec![],
             ));
@@ -449,7 +449,7 @@ pub fn analyze(
             && sender_is(email, "chimes.org")
         {
             findings.push(base(
-                FindingCategory::CommunicationBlock,
+                T7::CommunicationBlock,
                 "School restricting parent communication".into(),
                 extract_matching_lines(&email.body, &["no longer", "contact", "communicate"]),
             ));
@@ -461,7 +461,7 @@ pub fn analyze(
                 && (body_lower.contains("administered") || body_lower.contains("refused medication")))
         {
             findings.push(base(
-                FindingCategory::MedicationIssue,
+                T7::MedicationIssue,
                 "Medication administration documented".into(),
                 extract_matching_lines(&email.body, &["medication", "prn", "administered", "refused"]),
             ));
@@ -474,7 +474,7 @@ pub fn analyze(
             || subject_lower.contains("absent")
         {
             findings.push(base(
-                FindingCategory::SchoolAbsence,
+                T7::SchoolAbsence,
                 "School absence recorded".into(),
                 extract_matching_lines(&email.body, &["absent", "absence", "not in school"]),
             ));
@@ -488,7 +488,7 @@ pub fn analyze(
                     || body_has_word(&body_lower, "transportation")))
         {
             findings.push(base(
-                FindingCategory::TransportationIssue,
+                T7::TransportationIssue,
                 "Transportation/bus concern".into(),
                 extract_matching_lines(&email.body, &["bus", "belt", "harness", "transportation"]),
             ));
@@ -504,7 +504,7 @@ pub fn analyze(
             for phrase in &deesc_phrases {
                 if body_lower.contains(phrase) {
                     findings.push(base(
-                        FindingCategory::DeEscalation,
+                        T7::DeEscalation,
                         format!("Plaintiff de-escalation: \"{}\"", phrase),
                         extract_matching_lines(&email.body, &[phrase]),
                     ));
@@ -523,7 +523,7 @@ pub fn analyze(
             for phrase in &admission_phrases {
                 if body_lower.contains(phrase) {
                     findings.push(base(
-                        FindingCategory::AdmissionAgainstInterest,
+                        T7::AdmissionAgainstInterest,
                         format!("Defendant admission: \"{}\"", phrase),
                         extract_matching_lines(&email.body, &[phrase]),
                     ));
@@ -538,7 +538,7 @@ pub fn analyze(
             && body_has_word(&body_lower, "recommend")
         {
             findings.push(base(
-                FindingCategory::InstitutionalBias,
+                T7::InstitutionalBias,
                 "Institution deflecting parental concern".into(),
                 extract_matching_lines(&email.body, &["cannot", "authority", "recommend"]),
             ));
@@ -589,7 +589,7 @@ fn truncate_body(body: &str, max_len: usize) -> String {
 }
 
 /// Generate summary statistics
-pub fn summarize_findings(findings: &[Finding]) -> String {
+pub fn f6(findings: &[T6]) -> String {
     use std::collections::HashMap;
 
     let mut counts: HashMap<String, usize> = HashMap::new();
@@ -599,8 +599,8 @@ pub fn summarize_findings(findings: &[Finding]) -> String {
     for f in findings {
         *counts.entry(f.category.to_string()).or_default() += 1;
         match &f.custody_week {
-            Some(CustodyParent::Plaintiff) => plaintiff_custody_findings += 1,
-            Some(CustodyParent::Defendant) => defendant_custody_findings += 1,
+            Some(T8::Plaintiff) => plaintiff_custody_findings += 1,
+            Some(T8::Defendant) => defendant_custody_findings += 1,
             _ => {}
         }
     }

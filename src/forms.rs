@@ -5,7 +5,7 @@ use printpdf::*;
 use chrono::Datelike;
 
 #[derive(Error, Debug)]
-pub enum FormsError {
+pub enum T18 {
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
     #[error("pdf error: {0}")]
@@ -21,7 +21,7 @@ const LINE_H: f32 = 5.0;  // ~14pt in mm
 
 /// Generate jurisdiction-specific court forms
 #[allow(clippy::too_many_arguments)] // court filing fields are irreducible
-pub fn generate_forms(
+pub fn f15(
     output_dir: &Path,
     plaintiff: &str,
     defendant: &str,
@@ -31,7 +31,7 @@ pub fn generate_forms(
     county: &str,
     state: &str,
     skip: bool,
-) -> Result<Vec<PathBuf>, FormsError> {
+) -> Result<Vec<PathBuf>, T18> {
     if skip {
         return Ok(Vec::new());
     }
@@ -40,7 +40,7 @@ pub fn generate_forms(
 
     match state {
         "MD" => generate_md_forms(output_dir, plaintiff, defendant, children, dobs, case_number, county),
-        other => Err(FormsError::UnsupportedState(other.to_string())),
+        other => Err(T18::UnsupportedState(other.to_string())),
     }
 }
 
@@ -52,7 +52,7 @@ fn generate_md_forms(
     dobs: &str,
     case_number: &Option<String>,
     county: &str,
-) -> Result<Vec<PathBuf>, FormsError> {
+) -> Result<Vec<PathBuf>, T18> {
     let mut forms = Vec::new();
 
     // CC-DR-007: Petition to Modify Custody
@@ -86,16 +86,16 @@ fn generate_cc_dr_007(
     dobs: &str,
     case_number: &Option<String>,
     county: &str,
-) -> Result<(), FormsError> {
+) -> Result<(), T18> {
     let (doc, page1, layer1) = PdfDocument::new(
         "CC-DR-007 Petition to Modify Custody",
         PAGE_W, PAGE_H, "Page 1",
     );
 
     let font = doc.add_builtin_font(BuiltinFont::TimesRoman)
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
     let font_bold = doc.add_builtin_font(BuiltinFont::TimesBold)
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
 
     let layer = doc.get_page(page1).get_layer(layer1);
     let mut y = 279.4 - MARGIN;
@@ -187,7 +187,7 @@ fn generate_cc_dr_007(
     // Save
     let file = std::fs::File::create(path)?;
     doc.save(&mut BufWriter::new(file))
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
 
     Ok(())
 }
@@ -203,16 +203,16 @@ fn generate_cc_dc_cv_001(
     dobs: &str,
     case_number: &Option<String>,
     county: &str,
-) -> Result<(), FormsError> {
+) -> Result<(), T18> {
     let (doc, page1, layer1) = PdfDocument::new(
         "CC-DC-CV-001 Case Information Report",
         PAGE_W, PAGE_H, "Page 1",
     );
 
     let font = doc.add_builtin_font(BuiltinFont::TimesRoman)
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
     let bold = doc.add_builtin_font(BuiltinFont::TimesBold)
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
 
     let layer = doc.get_page(page1).get_layer(layer1);
     let mut y = PAGE_H.0 - MARGIN;
@@ -352,7 +352,7 @@ fn generate_cc_dc_cv_001(
 
     let file = std::fs::File::create(path)?;
     doc.save(&mut BufWriter::new(file))
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
 
     Ok(())
 }
@@ -370,16 +370,16 @@ fn generate_cc_dr_004(
     dobs: &str,
     case_number: &Option<String>,
     county: &str,
-) -> Result<(), FormsError> {
+) -> Result<(), T18> {
     let (doc, page1, layer1) = PdfDocument::new(
         "CC-DR-004 Financial Statement",
         PAGE_W, PAGE_H, "Page 1",
     );
 
     let font = doc.add_builtin_font(BuiltinFont::TimesRoman)
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
     let bold = doc.add_builtin_font(BuiltinFont::TimesBold)
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
 
     let layer = doc.get_page(page1).get_layer(layer1);
     let mut y = PAGE_H.0 - MARGIN;
@@ -505,7 +505,7 @@ fn generate_cc_dr_004(
 
     let file = std::fs::File::create(path)?;
     doc.save(&mut BufWriter::new(file))
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
 
     Ok(())
 }
@@ -523,16 +523,16 @@ fn generate_cc_dr_055(
     dobs: &str,
     case_number: &Option<String>,
     county: &str,
-) -> Result<(), FormsError> {
+) -> Result<(), T18> {
     let (doc, page1, layer1) = PdfDocument::new(
         "CC-DR-055 Parenting Plan",
         PAGE_W, PAGE_H, "Page 1",
     );
 
     let font = doc.add_builtin_font(BuiltinFont::TimesRoman)
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
     let bold = doc.add_builtin_font(BuiltinFont::TimesBold)
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
 
     let layer = doc.get_page(page1).get_layer(layer1);
     let mut y = PAGE_H.0 - MARGIN;
@@ -671,7 +671,7 @@ fn generate_cc_dr_055(
     y -= LINE_H;
     write_text(&layer, &font, 9.0, x + 5.0, y, "Child may contact non-custodial parent: [ ] Daily  [ ] Reasonable  [ ] Scheduled times");
     y -= LINE_H;
-    write_text(&layer, &font, 9.0, x + 5.0, y, "Parent-to-parent communication: [ ] Email  [ ] Text  [ ] Co-parenting app  [ ] Other");
+    write_text(&layer, &font, 9.0, x + 5.0, y, "Parent-to-parent communication: [ ] T0  [ ] Text  [ ] Co-parenting app  [ ] Other");
     y -= LINE_H;
     write_text(&layer, &font, 9.0, x + 5.0, y, "Response time expected: [ ] 24 hours  [ ] 48 hours  [ ] Reasonable");
     y -= 6.0;
@@ -790,7 +790,7 @@ fn generate_cc_dr_055(
 
     let file = std::fs::File::create(path)?;
     doc.save(&mut BufWriter::new(file))
-        .map_err(|e| FormsError::Pdf(format!("{}", e)))?;
+        .map_err(|e| T18::Pdf(format!("{}", e)))?;
 
     Ok(())
 }

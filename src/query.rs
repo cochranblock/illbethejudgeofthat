@@ -1,17 +1,17 @@
 use std::io::{self, BufRead, Write};
 use std::path::Path;
-use crate::analyze::{Finding, CustodyParent};
-use crate::thread::Thread;
-use crate::contradict::Contradiction;
-use crate::gaps::TimelineGap;
+use crate::analyze::{T6, T8};
+use crate::thread::T5;
+use crate::contradict::T10;
+use crate::gaps::T12;
 
 /// Interactive query mode — load JSON exports and filter/search findings
-pub fn run_query(output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn f19(output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     // Load data
-    let findings: Vec<Finding> = load_json(output_dir, "findings.json")?;
-    let threads: Vec<Thread> = load_json(output_dir, "threads.json")?;
-    let contradictions: Vec<Contradiction> = load_json(output_dir, "contradictions.json")?;
-    let gaps: Vec<TimelineGap> = load_json(output_dir, "gaps.json")?;
+    let findings: Vec<T6> = load_json(output_dir, "findings.json")?;
+    let threads: Vec<T5> = load_json(output_dir, "threads.json")?;
+    let contradictions: Vec<T10> = load_json(output_dir, "contradictions.json")?;
+    let gaps: Vec<T12> = load_json(output_dir, "gaps.json")?;
 
     println!("Query mode. {} findings, {} threads, {} contradictions, {} gaps loaded.",
         findings.len(), threads.len(), contradictions.len(), gaps.len());
@@ -112,14 +112,14 @@ fn print_help() {
     println!("  quit                          — exit query mode");
 }
 
-fn print_stats(findings: &[Finding], threads: &[Thread], contradictions: &[Contradiction], gaps: &[TimelineGap]) {
-    println!("{}", crate::analyze::summarize_findings(findings));
-    println!("{}", crate::thread::summarize_threads(threads));
-    println!("{}", crate::contradict::summarize_contradictions(contradictions));
-    println!("{}", crate::gaps::summarize_gaps(gaps));
+fn print_stats(findings: &[T6], threads: &[T5], contradictions: &[T10], gaps: &[T12]) {
+    println!("{}", crate::analyze::f6(findings));
+    println!("{}", crate::thread::f3(threads));
+    println!("{}", crate::contradict::f8(contradictions));
+    println!("{}", crate::gaps::f10(gaps));
 }
 
-fn print_exhibit(findings: &[Finding], num: usize) {
+fn print_exhibit(findings: &[T6], num: usize) {
     if let Some(f) = findings.iter().find(|f| f.exhibit_number == Some(num)) {
         println!("--- EXHIBIT {} ---", num);
         println!("Date:     {}", f.parsed_date.as_deref().unwrap_or(&f.date));
@@ -150,7 +150,7 @@ fn print_exhibit(findings: &[Finding], num: usize) {
     }
 }
 
-fn print_thread(threads: &[Thread], findings: &[Finding], id: &str) {
+fn print_thread(threads: &[T5], findings: &[T6], id: &str) {
     // Try by index first
     let thread = if let Ok(idx) = id.parse::<usize>() {
         threads.get(idx)
@@ -167,7 +167,7 @@ fn print_thread(threads: &[Thread], findings: &[Finding], id: &str) {
         println!();
 
         for &email_idx in &t.emails {
-            let related: Vec<&Finding> = findings.iter()
+            let related: Vec<&T6> = findings.iter()
                 .filter(|f| f.source_email_index == Some(email_idx))
                 .collect();
             if !related.is_empty() {
@@ -182,30 +182,30 @@ fn print_thread(threads: &[Thread], findings: &[Finding], id: &str) {
     }
 }
 
-fn print_contradictions(contradictions: &[Contradiction]) {
+fn print_contradictions(contradictions: &[T10]) {
     for c in contradictions {
         println!("  Exhibits {} vs {} | {} | {}", c.exhibit_a, c.exhibit_b, c.contradiction_type, c.explanation);
     }
     println!("{} total", contradictions.len());
 }
 
-fn print_gaps(gaps: &[TimelineGap]) {
+fn print_gaps(gaps: &[T12]) {
     for g in gaps {
         println!("  {} | {} to {} ({} days) | {} | {}", g.gap_type, g.start_date, g.end_date, g.duration_days, g.expected_source, g.significance);
     }
     println!("{} total", gaps.len());
 }
 
-fn filter_category(findings: &[Finding], cat: &str) {
+fn filter_category(findings: &[T6], cat: &str) {
     let cat_lower = cat.to_lowercase();
-    let matches: Vec<&Finding> = findings.iter()
+    let matches: Vec<&T6> = findings.iter()
         .filter(|f| f.category.to_string().to_lowercase().contains(&cat_lower))
         .collect();
     print_finding_list(&matches);
 }
 
-fn filter_date(findings: &[Finding], start: &str, end: &str) {
-    let matches: Vec<&Finding> = findings.iter()
+fn filter_date(findings: &[T6], start: &str, end: &str) {
+    let matches: Vec<&T6> = findings.iter()
         .filter(|f| {
             if let Some(d) = &f.parsed_date {
                 d.as_str() >= start && d.as_str() <= end
@@ -217,32 +217,32 @@ fn filter_date(findings: &[Finding], start: &str, end: &str) {
     print_finding_list(&matches);
 }
 
-fn filter_sender(findings: &[Finding], sender: &str) {
+fn filter_sender(findings: &[T6], sender: &str) {
     let sender_lower = sender.to_lowercase();
-    let matches: Vec<&Finding> = findings.iter()
+    let matches: Vec<&T6> = findings.iter()
         .filter(|f| f.from.to_lowercase().contains(&sender_lower))
         .collect();
     print_finding_list(&matches);
 }
 
-fn filter_custody(findings: &[Finding], who: &str) {
+fn filter_custody(findings: &[T6], who: &str) {
     let target = match who.to_lowercase().as_str() {
-        "plaintiff" | "p" => CustodyParent::Plaintiff,
-        "defendant" | "d" => CustodyParent::Defendant,
+        "plaintiff" | "p" => T8::Plaintiff,
+        "defendant" | "d" => T8::Defendant,
         _ => {
             println!("Use: plaintiff or defendant");
             return;
         }
     };
-    let matches: Vec<&Finding> = findings.iter()
+    let matches: Vec<&T6> = findings.iter()
         .filter(|f| f.custody_week.as_ref() == Some(&target))
         .collect();
     print_finding_list(&matches);
 }
 
-fn filter_keyword(findings: &[Finding], keyword: &str) {
+fn filter_keyword(findings: &[T6], keyword: &str) {
     let kw_lower = keyword.to_lowercase();
-    let matches: Vec<&Finding> = findings.iter()
+    let matches: Vec<&T6> = findings.iter()
         .filter(|f| {
             f.detail.to_lowercase().contains(&kw_lower)
                 || f.summary.to_lowercase().contains(&kw_lower)
@@ -253,15 +253,15 @@ fn filter_keyword(findings: &[Finding], keyword: &str) {
     print_finding_list(&matches);
 }
 
-fn filter_child(findings: &[Finding], name: &str) {
+fn filter_child(findings: &[T6], name: &str) {
     let name_lower = name.to_lowercase();
-    let matches: Vec<&Finding> = findings.iter()
+    let matches: Vec<&T6> = findings.iter()
         .filter(|f| f.child_name.as_ref().map(|c| c.to_lowercase().contains(&name_lower)).unwrap_or(false))
         .collect();
     print_finding_list(&matches);
 }
 
-fn print_finding_list(findings: &[&Finding]) {
+fn print_finding_list(findings: &[&T6]) {
     for f in findings {
         println!("  [{:>3}] {} | {:24} | {} | {}",
             f.exhibit_number.unwrap_or(0),

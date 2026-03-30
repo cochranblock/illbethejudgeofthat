@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use mailparse::{parse_mail, MailHeaderMap};
 
 #[derive(Error, Debug)]
-pub enum IngestError {
+pub enum T2 {
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
     #[error("parse error: {0}")]
@@ -12,7 +12,7 @@ pub enum IngestError {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Email {
+pub struct T0 {
     pub index: usize,
     pub from: String,
     pub to: String,
@@ -24,20 +24,20 @@ pub struct Email {
     pub message_id: String,
     pub in_reply_to: String,
     pub thread_id: String,
-    pub attachments: Vec<Attachment>,
+    pub attachments: Vec<T1>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Attachment {
+pub struct T1 {
     pub filename: String,
     pub content_type: String,
     pub data: Vec<u8>,
 }
 
 /// Ingest an mbox file using mailparse for proper MIME decoding
-pub fn ingest_mbox(path: &Path) -> Result<Vec<Email>, IngestError> {
+pub fn f0(path: &Path) -> Result<Vec<T0>, T2> {
     let content = std::fs::read(path)
-        .map_err(|e| IngestError::Parse(format!("failed to read mbox: {}", e)))?;
+        .map_err(|e| T2::Parse(format!("failed to read mbox: {}", e)))?;
 
     let raw_str = String::from_utf8_lossy(&content);
     let raw_messages = split_mbox(&raw_str);
@@ -77,9 +77,9 @@ fn split_mbox(content: &str) -> Vec<String> {
 }
 
 /// Parse a single raw email using mailparse
-fn parse_single_email(index: usize, raw: &[u8]) -> Result<Email, IngestError> {
+fn parse_single_email(index: usize, raw: &[u8]) -> Result<T0, T2> {
     let parsed = parse_mail(raw)
-        .map_err(|e| IngestError::Parse(format!("mailparse: {}", e)))?;
+        .map_err(|e| T2::Parse(format!("mailparse: {}", e)))?;
 
     let headers = &parsed.headers;
 
@@ -106,7 +106,7 @@ fn parse_single_email(index: usize, raw: &[u8]) -> Result<Email, IngestError> {
     // Extract attachments
     let attachments = extract_attachments_from_mime(&parsed);
 
-    Ok(Email {
+    Ok(T0 {
         index,
         from,
         to,
@@ -222,7 +222,7 @@ fn strip_html_tags(html: &str) -> String {
 }
 
 /// Extract MIME attachments recursively
-fn extract_attachments_from_mime(mail: &mailparse::ParsedMail) -> Vec<Attachment> {
+fn extract_attachments_from_mime(mail: &mailparse::ParsedMail) -> Vec<T1> {
     let mut attachments = Vec::new();
 
     let disp = mail.get_content_disposition();
@@ -235,7 +235,7 @@ fn extract_attachments_from_mime(mail: &mailparse::ParsedMail) -> Vec<Attachment
         let content_type = mail.ctype.mimetype.clone();
         let data = mail.get_body_raw().unwrap_or_default();
 
-        attachments.push(Attachment {
+        attachments.push(T1 {
             filename,
             content_type,
             data,

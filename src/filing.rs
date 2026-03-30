@@ -11,9 +11,9 @@
 use std::path::{Path, PathBuf};
 use printpdf::*;
 use std::io::BufWriter;
-use crate::analyze::Finding;
-use crate::precedent::PrecedentMatch;
-use crate::contradict::Contradiction;
+use crate::analyze::T6;
+use crate::precedent::T16;
+use crate::contradict::T10;
 
 const PAGE_W: Mm = Mm(215.9);
 const PAGE_H: Mm = Mm(279.4);
@@ -23,7 +23,7 @@ const DOUBLE_SPACE: f32 = 10.0;
 
 /// Filing type determines format and required sections.
 #[derive(Debug, Clone)]
-pub enum FilingType {
+pub enum T19 {
     /// Motion to Modify Custody — the primary filing
     MotionModifyCustody,
     /// Memorandum of Law in Support
@@ -39,7 +39,7 @@ pub enum FilingType {
     MotionContempt,
 }
 
-impl FilingType {
+impl T19 {
     fn title(&self) -> &str {
         match self {
             Self::MotionModifyCustody => "MOTION TO MODIFY CUSTODY",
@@ -52,17 +52,17 @@ impl FilingType {
 }
 
 /// Court filing context — everything needed to generate a filing.
-pub struct FilingContext {
+pub struct T20 {
     pub plaintiff: String,
     pub defendant: String,
     pub case_number: String,
     pub county: String,
     #[allow(dead_code)]
     pub court: String,
-    pub findings: Vec<Finding>,
-    pub precedents: Vec<PrecedentMatch>,
-    pub contradictions: Vec<Contradiction>,
-    pub filing_type: FilingType,
+    pub findings: Vec<T6>,
+    pub precedents: Vec<T16>,
+    pub contradictions: Vec<T10>,
+    pub filing_type: T19,
 }
 
 /// A numbered paragraph in a filing, with source tracing.
@@ -78,18 +78,18 @@ struct FilingParagraph {
 }
 
 /// Generate a complete court filing as PDF.
-pub fn generate_filing(
-    ctx: &FilingContext,
+pub fn f16(
+    ctx: &T20,
     output_dir: &Path,
 ) -> Result<PathBuf, String> {
     std::fs::create_dir_all(output_dir).map_err(|e| e.to_string())?;
 
     let filename = match ctx.filing_type {
-        FilingType::MotionModifyCustody => "MOTION_MODIFY_CUSTODY.pdf",
-        FilingType::MemorandumInSupport => "MEMORANDUM_IN_SUPPORT.pdf",
-        FilingType::Opposition => "OPPOSITION.pdf",
-        FilingType::DiscoveryResponse => "DISCOVERY_RESPONSE.pdf",
-        FilingType::MotionContempt => "MOTION_CONTEMPT.pdf",
+        T19::MotionModifyCustody => "MOTION_MODIFY_CUSTODY.pdf",
+        T19::MemorandumInSupport => "MEMORANDUM_IN_SUPPORT.pdf",
+        T19::Opposition => "OPPOSITION.pdf",
+        T19::DiscoveryResponse => "DISCOVERY_RESPONSE.pdf",
+        T19::MotionContempt => "MOTION_CONTEMPT.pdf",
     };
 
     let path = output_dir.join(filename);
@@ -218,7 +218,7 @@ fn write_caption(
     font: &IndirectFontRef,
     bold: &IndirectFontRef,
     mut y: f32,
-    ctx: &FilingContext,
+    ctx: &T20,
 ) -> f32 {
     // Court header
     write_centered(layer, bold, y, &format!("IN THE CIRCUIT COURT FOR {} COUNTY", ctx.county.to_uppercase()), 12.0);
@@ -251,7 +251,7 @@ fn write_caption(
 }
 
 /// Build numbered paragraphs from findings, each traced to exhibits and citations.
-fn build_paragraphs(ctx: &FilingContext) -> Vec<FilingParagraph> {
+fn build_paragraphs(ctx: &T20) -> Vec<FilingParagraph> {
     let mut paras = Vec::new();
     let mut num = 1;
 
@@ -282,7 +282,7 @@ fn build_paragraphs(ctx: &FilingContext) -> Vec<FilingParagraph> {
     num += 1;
 
     // Group findings by best-interest factor
-    let mut by_factor: std::collections::HashMap<String, Vec<&Finding>> = std::collections::HashMap::new();
+    let mut by_factor: std::collections::HashMap<String, Vec<&T6>> = std::collections::HashMap::new();
     for f in &ctx.findings {
         let cat = format!("{:?}", f.category);
         by_factor.entry(cat).or_default().push(f);
@@ -310,7 +310,7 @@ fn build_paragraphs(ctx: &FilingContext) -> Vec<FilingParagraph> {
         num += 1;
     }
 
-    // Contradiction paragraphs
+    // T10 paragraphs
     for contra in &ctx.contradictions {
         paras.push(FilingParagraph {
             number: num,
@@ -328,15 +328,15 @@ fn build_paragraphs(ctx: &FilingContext) -> Vec<FilingParagraph> {
     paras
 }
 
-fn prayer_for_relief(filing_type: &FilingType) -> Vec<String> {
+fn prayer_for_relief(filing_type: &T19) -> Vec<String> {
     match filing_type {
-        FilingType::MotionModifyCustody => vec![
+        T19::MotionModifyCustody => vec![
             "Modify the existing custody arrangement in the best interest of the minor child(ren)".into(),
             "Grant Plaintiff primary physical custody".into(),
             "Order a custody evaluation pursuant to MD Family Law §9-109".into(),
             "Grant such other and further relief as this Court deems just and proper".into(),
         ],
-        FilingType::MotionContempt => vec![
+        T19::MotionContempt => vec![
             "Find Defendant in contempt of the existing court order".into(),
             "Impose appropriate sanctions".into(),
             "Award Plaintiff reasonable costs and fees".into(),

@@ -13,18 +13,18 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CitationCheck {
+pub struct T21 {
     pub citation: String,
     pub case_name: String,
     pub valid_format: bool,
     pub found_in_db: bool,
     pub court: Option<String>,
     pub year: Option<u32>,
-    pub status: CitationStatus,
+    pub status: T22,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum CitationStatus {
+pub enum T22 {
     Verified,
     FormatOk,
     NotFound,
@@ -32,7 +32,7 @@ pub enum CitationStatus {
 }
 
 /// Verify all citations used in precedent matches.
-pub fn verify_all(precedents: &[crate::precedent::PrecedentMatch]) -> Vec<CitationCheck> {
+pub fn f17(precedents: &[crate::precedent::T16]) -> Vec<T21> {
     let mut checks = Vec::new();
 
     for pm in precedents {
@@ -41,14 +41,14 @@ pub fn verify_all(precedents: &[crate::precedent::PrecedentMatch]) -> Vec<Citati
         let db_match = KNOWN_CITATIONS.iter().any(|k| p.citation.contains(k));
 
         let status = if db_match {
-            CitationStatus::Verified
+            T22::Verified
         } else if format_ok {
-            CitationStatus::FormatOk
+            T22::FormatOk
         } else {
-            CitationStatus::BadFormat
+            T22::BadFormat
         };
 
-        checks.push(CitationCheck {
+        checks.push(T21 {
             citation: p.citation.clone(),
             case_name: p.case_name.clone(),
             valid_format: format_ok,
@@ -85,10 +85,10 @@ fn verify_citation_format(citation: &str) -> bool {
 }
 
 /// Print verification report.
-pub fn print_report(checks: &[CitationCheck]) {
-    let verified = checks.iter().filter(|c| matches!(c.status, CitationStatus::Verified)).count();
-    let format_only = checks.iter().filter(|c| matches!(c.status, CitationStatus::FormatOk)).count();
-    let bad = checks.iter().filter(|c| matches!(c.status, CitationStatus::BadFormat | CitationStatus::NotFound)).count();
+pub fn f18(checks: &[T21]) {
+    let verified = checks.iter().filter(|c| matches!(c.status, T22::Verified)).count();
+    let format_only = checks.iter().filter(|c| matches!(c.status, T22::FormatOk)).count();
+    let bad = checks.iter().filter(|c| matches!(c.status, T22::BadFormat | T22::NotFound)).count();
 
     println!("Citation Verification Report");
     println!("============================");
@@ -99,10 +99,10 @@ pub fn print_report(checks: &[CitationCheck]) {
 
     for c in checks {
         let icon = match c.status {
-            CitationStatus::Verified => "[OK]",
-            CitationStatus::FormatOk => "[??]",
-            CitationStatus::NotFound => "[!!]",
-            CitationStatus::BadFormat => "[XX]",
+            T22::Verified => "[OK]",
+            T22::FormatOk => "[??]",
+            T22::NotFound => "[!!]",
+            T22::BadFormat => "[XX]",
         };
         println!("  {} {} — {}", icon, c.case_name, c.citation);
     }

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use crate::ingest::Email;
-use crate::analyze::parse_email_date;
+use crate::ingest::T0;
+use crate::analyze::f4;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Thread {
+pub struct T5 {
     pub thread_id: String,
     pub emails: Vec<usize>,
     pub participants: Vec<String>,
@@ -17,7 +17,7 @@ pub struct Thread {
 
 /// Reconstruct conversation threads from parsed emails.
 /// 3-tier: X-GM-THRID → In-Reply-To/Message-ID chain → normalized subject within 7 days.
-pub fn reconstruct_threads(emails: &[Email]) -> Vec<Thread> {
+pub fn f2(emails: &[T0]) -> Vec<T5> {
     // Build lookup maps
     let mut msgid_to_idx: HashMap<String, usize> = HashMap::new();
     for (i, email) in emails.iter().enumerate() {
@@ -81,7 +81,7 @@ pub fn reconstruct_threads(emails: &[Email]) -> Vec<Thread> {
     for (i, email) in emails.iter().enumerate() {
         let norm = normalize_subject(&email.subject);
         if norm.len() > 3 {
-            let date = parse_email_date(&email.date);
+            let date = f4(&email.date);
             subject_map.entry(norm).or_default().push((i, date));
         }
     }
@@ -111,12 +111,12 @@ pub fn reconstruct_threads(emails: &[Email]) -> Vec<Thread> {
     }
 
     // Build Thread structs
-    let mut threads: Vec<Thread> = Vec::with_capacity(groups.len());
+    let mut threads: Vec<T5> = Vec::with_capacity(groups.len());
     for (_, mut indices) in groups {
         // Sort by date
         indices.sort_by(|a, b| {
-            let da = parse_email_date(&emails[*a].date);
-            let db = parse_email_date(&emails[*b].date);
+            let da = f4(&emails[*a].date);
+            let db = f4(&emails[*b].date);
             da.cmp(&db)
         });
 
@@ -138,12 +138,12 @@ pub fn reconstruct_threads(emails: &[Email]) -> Vec<Thread> {
             format!("synth-{}", indices[0])
         };
 
-        threads.push(Thread {
+        threads.push(T5 {
             thread_id,
             message_count: indices.len(),
             subject: normalize_subject(&first.subject),
-            start_date: parse_email_date(&first.date).map(|d| d.format("%Y-%m-%d").to_string()),
-            end_date: parse_email_date(&last.date).map(|d| d.format("%Y-%m-%d").to_string()),
+            start_date: f4(&first.date).map(|d| d.format("%Y-%m-%d").to_string()),
+            end_date: f4(&last.date).map(|d| d.format("%Y-%m-%d").to_string()),
             participants,
             emails: indices,
         });
@@ -189,7 +189,7 @@ fn extract_email_addr(from: &str) -> String {
 }
 
 /// Print thread summary
-pub fn summarize_threads(threads: &[Thread]) -> String {
+pub fn f3(threads: &[T5]) -> String {
     let mut out = String::new();
     out.push_str(&format!("Threads reconstructed: {}\n", threads.len()));
 
@@ -199,7 +199,7 @@ pub fn summarize_threads(threads: &[Thread]) -> String {
     out.push_str(&format!("  Single-message threads: {}\n", single));
 
     // Top 10 longest threads
-    let mut by_len: Vec<&Thread> = threads.iter().collect();
+    let mut by_len: Vec<&T5> = threads.iter().collect();
     by_len.sort_by(|a, b| b.message_count.cmp(&a.message_count));
     out.push_str("\nTop 10 threads by length:\n");
     for t in by_len.iter().take(10) {

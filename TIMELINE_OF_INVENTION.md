@@ -10,6 +10,13 @@
 
 ## Entries
 
+### 2026-03-30 — v0.4.0: P13 Tokenization + 4 Court Forms + Exopack + Binary Diet
+
+**What:** Kova P13 compression mapping applied — all 20 public functions (f0-f19) and 23 types (T0-T22) tokenized with doc-comment mappings. Added CC-DC-CV-001 (Case Information Report), CC-DR-004 (Financial Statement), CC-DR-055 (Parenting Plan) court forms. Exopack TRIPLE SIMS quality gate. Removed dead deps (image, base64), moved tokio to test-only. Release binary: 2.5MB stripped.
+**Why:** Kova ecosystem alignment. Court filing package was incomplete without mandatory Case Information Report. Binary size matters for zero-cloud deployment.
+**Commits:** `05dd1d1` through current
+**AI Role:** AI executed P13 rename, form generation, and dep audit. Human directed tokenization scheme, form requirements, and legal content.
+
 ### 2026-03-21 — Proof of Artifacts + Timeline + Zero-Cloud Banner
 
 **What:** Added Proof of Artifacts, Timeline of Invention, and CochranBlock zero-cloud banner to README.

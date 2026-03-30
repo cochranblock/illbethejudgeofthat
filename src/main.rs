@@ -80,13 +80,12 @@ struct Cli {
     query: bool,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     // Query mode: load existing data and enter REPL
     if cli.query {
-        return query::run_query(&cli.output);
+        return query::f19(&cli.output);
     }
 
     let custody_start = NaiveDate::parse_from_str(&cli.custody_start, "%Y-%m-%d")
@@ -95,7 +94,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             NaiveDate::from_ymd_opt(2025, 1, 2).unwrap()
         });
 
-    println!("illbethejudgeofthat v0.3.3");
+    println!("illbethejudgeofthat v0.4.0");
     println!("=========================");
     println!();
     println!("Plaintiff:      {}", cli.plaintiff);
@@ -112,7 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Stage 1: Ingest
     println!("[1/10] Ingesting email archive...");
-    let emails = ingest::ingest_mbox(&cli.input)?;
+    let emails = ingest::f0(&cli.input)?;
     println!("      {} emails parsed", emails.len());
 
     if cli.dump_emails {
@@ -124,14 +123,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Stage 2: Parse attachments
     println!("[2/10] Extracting attachments...");
-    let attachments = parse::extract_attachments(&emails, &cli.output)?;
+    let attachments = parse::f1(&emails, &cli.output)?;
     println!("      {} attachments extracted", attachments.len());
 
     // Stage 3: Thread reconstruction
     println!("[3/10] Reconstructing threads...");
-    let threads = thread::reconstruct_threads(&emails);
+    let threads = thread::f2(&emails);
     println!("      {} threads from {} emails", threads.len(), emails.len());
-    let thread_summary = thread::summarize_threads(&threads);
+    let thread_summary = thread::f3(&threads);
     println!("{}", thread_summary);
 
     let threads_path = cli.output.join("threads.json");
@@ -140,7 +139,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Stage 4: Analyze
     println!("[4/10] Analyzing for findings...");
-    let findings = analyze::analyze(
+    let findings = analyze::f5(
         &emails,
         &attachments,
         &cli.plaintiff,
@@ -150,7 +149,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     println!("      {} findings identified", findings.len());
     println!();
-    println!("{}", analyze::summarize_findings(&findings));
+    println!("{}", analyze::f6(&findings));
 
     // Export findings JSON
     let findings_path = cli.output.join("findings.json");
@@ -163,13 +162,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     export_timeline_csv(&findings, &timeline_path)?;
     println!("Timeline: {}", timeline_path.display());
 
-    // Stage 5: Contradiction detection
+    // Stage 5: T10 detection
     println!();
     println!("[5/10] Detecting contradictions...");
-    let contradictions = contradict::detect_contradictions(&findings, &threads);
+    let contradictions = contradict::f7(&findings, &threads);
     println!("      {} contradictions found", contradictions.len());
     if !contradictions.is_empty() {
-        println!("{}", contradict::summarize_contradictions(&contradictions));
+        println!("{}", contradict::f8(&contradictions));
     }
 
     let contra_path = cli.output.join("contradictions.json");
@@ -178,22 +177,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Stage 6: Gap detection
     println!("[6/10] Detecting timeline gaps...");
-    let timeline_gaps = gaps::detect_gaps(&emails, &findings, &threads);
+    let timeline_gaps = gaps::f9(&emails, &findings, &threads);
     println!("      {} gaps found", timeline_gaps.len());
     if !timeline_gaps.is_empty() {
-        println!("{}", gaps::summarize_gaps(&timeline_gaps));
+        println!("{}", gaps::f10(&timeline_gaps));
     }
 
     let gaps_path = cli.output.join("gaps.json");
     let gaps_json = serde_json::to_string_pretty(&timeline_gaps)?;
     std::fs::write(&gaps_path, &gaps_json)?;
 
-    // Stage 7: Precedent matching
+    // Stage 7: T15 matching
     println!("[7/10] Matching precedents...");
-    let precedent_matches = precedent::match_precedents(&findings);
+    let precedent_matches = precedent::f11(&findings);
     println!("      {} precedent matches", precedent_matches.len());
     if !precedent_matches.is_empty() {
-        println!("{}", precedent::summarize_precedents(&precedent_matches));
+        println!("{}", precedent::f13(&precedent_matches));
     }
 
     let precedent_path = cli.output.join("precedents.json");
@@ -201,7 +200,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::write(&precedent_path, &precedent_json)?;
 
     // Legal brief outline
-    let brief = precedent::build_factor_brief(&precedent_matches, &findings);
+    let brief = precedent::f12(&precedent_matches, &findings);
     let brief_path = cli.output.join("legal_brief_outline.txt");
     std::fs::write(&brief_path, &brief)?;
     println!("Legal brief: {}", brief_path.display());
@@ -216,7 +215,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Stage 8: Build exhibit book
     println!();
     println!("[8/10] Building exhibit book...");
-    let exhibit_path = exhibit::build_exhibit_book(
+    let exhibit_path = exhibit::f14(
         &findings,
         &contradictions,
         &timeline_gaps,
@@ -231,15 +230,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Stage 9: Citation verification
     println!("[9/10] Verifying citations...");
-    let cite_checks = cite_verify::verify_all(&precedent_matches);
-    cite_verify::print_report(&cite_checks);
+    let cite_checks = cite_verify::f17(&precedent_matches);
+    cite_verify::f18(&cite_checks);
     let cite_path = cli.output.join("citation_verification.json");
     std::fs::write(&cite_path, serde_json::to_string_pretty(&cite_checks)?)?;
 
     // Stage 10: Generate court filings
     println!();
     println!("[10/10] Generating court filings...");
-    let filing_ctx = filing::FilingContext {
+    let filing_ctx = filing::T20 {
         plaintiff: cli.plaintiff.clone(),
         defendant: cli.defendant.clone(),
         case_number: cli.case_number.clone().unwrap_or_else(|| "____________".into()),
@@ -248,17 +247,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         findings: findings.clone(),
         precedents: precedent_matches.clone(),
         contradictions: contradictions.clone(),
-        filing_type: filing::FilingType::MotionModifyCustody,
+        filing_type: filing::T19::MotionModifyCustody,
     };
-    match filing::generate_filing(&filing_ctx, &cli.output) {
+    match filing::f16(&filing_ctx, &cli.output) {
         Ok(path) => println!("      {}", path.display()),
         Err(e) => eprintln!("      filing error: {}", e),
     }
 
     // Also generate memorandum in support
-    let memo_ctx = filing::FilingContext {
-        filing_type: filing::FilingType::MemorandumInSupport,
-        ..filing::FilingContext {
+    let memo_ctx = filing::T20 {
+        filing_type: filing::T19::MemorandumInSupport,
+        ..filing::T20 {
             plaintiff: cli.plaintiff.clone(),
             defendant: cli.defendant.clone(),
             case_number: cli.case_number.clone().unwrap_or_else(|| "____________".into()),
@@ -267,17 +266,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             findings: findings.clone(),
             precedents: precedent_matches.clone(),
             contradictions: contradictions.clone(),
-            filing_type: filing::FilingType::MemorandumInSupport,
+            filing_type: filing::T19::MemorandumInSupport,
         }
     };
-    match filing::generate_filing(&memo_ctx, &cli.output) {
+    match filing::f16(&memo_ctx, &cli.output) {
         Ok(path) => println!("      {}", path.display()),
         Err(e) => eprintln!("      memo error: {}", e),
     }
 
     if !cli.skip_forms {
         println!("      Generating court forms...");
-        let court_forms = forms::generate_forms(
+        let court_forms = forms::f15(
             &cli.output,
             &cli.plaintiff,
             &cli.defendant,
@@ -310,7 +309,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  CC-DR-055_PARENTING_PLAN.pdf      — proposed custody schedule");
     println!("  citation_verification.json   — all citations verified");
     println!();
-    let bad_cites = cite_checks.iter().filter(|c| matches!(c.status, cite_verify::CitationStatus::BadFormat | cite_verify::CitationStatus::NotFound)).count();
+    let bad_cites = cite_checks.iter().filter(|c| matches!(c.status, cite_verify::T22::BadFormat | cite_verify::T22::NotFound)).count();
     if bad_cites > 0 {
         println!("WARNING: {} citation(s) need manual verification before filing.", bad_cites);
     }
@@ -322,7 +321,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn export_timeline_csv(
-    findings: &[analyze::Finding],
+    findings: &[analyze::T6],
     path: &std::path::Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut csv = String::new();
@@ -331,8 +330,8 @@ fn export_timeline_csv(
     for f in findings {
         let date = f.parsed_date.as_deref().unwrap_or(&f.date);
         let custody = match &f.custody_week {
-            Some(analyze::CustodyParent::Plaintiff) => "Plaintiff",
-            Some(analyze::CustodyParent::Defendant) => "Defendant",
+            Some(analyze::T8::Plaintiff) => "Plaintiff",
+            Some(analyze::T8::Defendant) => "Defendant",
             _ => "Unknown",
         };
         let child = f.child_name.as_deref().unwrap_or("");

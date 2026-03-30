@@ -68,7 +68,21 @@ All artifacts land in `./filing/` (or `--output`):
 | `MOTION_MODIFY_CUSTODY.pdf` | Filed-ready motion |
 | `MEMORANDUM_IN_SUPPORT.pdf` | Supporting memorandum |
 | `citation_verification.json` | Citation verification report |
-| `CC-DR-007_FILLED.pdf` | Filled court form (MD) |
+| `CC-DR-007_FILLED.pdf` | Petition to Modify Custody (MD) |
+| `CC-DC-CV-001_CASE_INFO_REPORT.pdf` | Case Information Report (required) |
+| `CC-DR-004_FINANCIAL_STATEMENT.pdf` | Income/expense disclosure |
+| `CC-DR-055_PARENTING_PLAN.pdf` | Proposed custody schedule |
+
+## Compression Map
+
+All public symbols follow [Kova P13 tokenization](docs/compression_map.md). Functions are `f0`-`f19`, types are `T0`-`T22`. Doc comments on each symbol map back to the human name.
+
+## Build
+
+```bash
+cargo build --release                                    # 2.5MB stripped binary
+cargo run --features tests --bin illbethejudgeofthat-test # TRIPLE SIMS quality gate
+```
 
 ## Built by a father who needed it.
 

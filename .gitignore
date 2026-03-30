@@ -1,1 +1,10 @@
 /target
+*.log
+.env
+.DS_Store
+*.swp
+*.swo
+*~
+*.orig
+*.bak
+filing/

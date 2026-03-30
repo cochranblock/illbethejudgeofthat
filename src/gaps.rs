@@ -1,17 +1,17 @@
 use std::collections::{HashMap, HashSet};
 use chrono::{Datelike, NaiveDate, Weekday};
 use serde::{Deserialize, Serialize};
-use crate::analyze::{Finding, FindingCategory, CustodyParent, parse_email_date};
-use crate::thread::Thread;
-use crate::ingest::Email;
+use crate::analyze::{T6, T7, T8, f4};
+use crate::thread::T5;
+use crate::ingest::T0;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TimelineGap {
+pub struct T12 {
     pub gap_type: GapType,
     pub start_date: String,
     pub end_date: String,
     pub duration_days: i64,
-    pub custody_parent: Option<CustodyParent>,
+    pub custody_parent: Option<T8>,
     pub expected_source: String,
     pub significance: String,
 }
@@ -36,16 +36,16 @@ impl std::fmt::Display for GapType {
 }
 
 /// Detect timeline gaps in the communication record
-pub fn detect_gaps(
-    emails: &[Email],
-    findings: &[Finding],
-    threads: &[Thread],
-) -> Vec<TimelineGap> {
+pub fn f9(
+    emails: &[T0],
+    findings: &[T6],
+    threads: &[T5],
+) -> Vec<T12> {
     let mut gaps = Vec::new();
 
     // Collect all dates with daily reports
     let daily_report_dates: HashSet<NaiveDate> = findings.iter()
-        .filter(|f| f.category == FindingCategory::DailyReport)
+        .filter(|f| f.category == T7::DailyReport)
         .filter_map(|f| f.parsed_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()))
         .collect();
 
@@ -66,7 +66,7 @@ pub fn detect_gaps(
                 let prev = date - chrono::Duration::days(1);
                 let duration = (prev - start).num_days() + 1;
                 if duration >= 2 {
-                    gaps.push(TimelineGap {
+                    gaps.push(T12 {
                         gap_type: GapType::DailyReportMissing,
                         start_date: start.format("%Y-%m-%d").to_string(),
                         end_date: prev.format("%Y-%m-%d").to_string(),
@@ -86,7 +86,7 @@ pub fn detect_gaps(
         if let Some(start) = gap_start {
             let duration = (max_date - start).num_days() + 1;
             if duration >= 2 {
-                gaps.push(TimelineGap {
+                gaps.push(T12 {
                     gap_type: GapType::DailyReportMissing,
                     start_date: start.format("%Y-%m-%d").to_string(),
                     end_date: max_date.format("%Y-%m-%d").to_string(),
@@ -103,7 +103,7 @@ pub fn detect_gaps(
     let mut sender_dates: HashMap<String, Vec<NaiveDate>> = HashMap::new();
     for email in emails {
         let sender = email.from.to_lowercase();
-        if let Some(d) = parse_email_date(&email.date) {
+        if let Some(d) = f4(&email.date) {
             sender_dates.entry(sender).or_default().push(d);
         }
     }
@@ -121,7 +121,7 @@ pub fn detect_gaps(
                 } else {
                     sender.clone()
                 };
-                gaps.push(TimelineGap {
+                gaps.push(T12 {
                     gap_type: GapType::CommunicationSilence,
                     start_date: window[0].format("%Y-%m-%d").to_string(),
                     end_date: window[1].format("%Y-%m-%d").to_string(),
@@ -150,7 +150,7 @@ pub fn detect_gaps(
         if has_question {
             if let (Some(start), Some(end)) = (&thread.start_date, &thread.end_date) {
                 if start != end {
-                    gaps.push(TimelineGap {
+                    gaps.push(T12 {
                         gap_type: GapType::ThreadAbandoned,
                         start_date: end.clone(),
                         end_date: end.clone(),
@@ -170,7 +170,7 @@ pub fn detect_gaps(
     gaps
 }
 
-pub fn summarize_gaps(gaps: &[TimelineGap]) -> String {
+pub fn f10(gaps: &[T12]) -> String {
     let mut out = String::new();
     out.push_str(&format!("Timeline gaps found: {}\n", gaps.len()));
 
@@ -184,7 +184,7 @@ pub fn summarize_gaps(gaps: &[TimelineGap]) -> String {
     }
 
     // Longest gaps
-    let mut sorted: Vec<&TimelineGap> = gaps.iter()
+    let mut sorted: Vec<&T12> = gaps.iter()
         .filter(|g| g.gap_type != GapType::ThreadAbandoned)
         .collect();
     sorted.sort_by(|a, b| b.duration_days.cmp(&a.duration_days));

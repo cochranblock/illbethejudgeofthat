@@ -3,7 +3,7 @@
 
 [package]
 name = "illbethejudgeofthat"
-version = "0.3.3"
+version = "0.4.0"
 edition = "2021"
 description = "Pro se custody case builder. Google Takeout to courtroom in one evening."
 license = "Unlicense"
@@ -12,7 +12,7 @@ default-run = "illbethejudgeofthat"
 # tests = exopack for TRIPLE SIMS quality gate. Release strips both.
 [features]
 default = []
-tests = ["exopack"]
+tests = ["exopack", "tokio"]
 
 [[bin]]
 name = "illbethejudgeofthat"
@@ -24,7 +24,6 @@ path = "src/bin/illbethejudgeofthat-test.rs"
 required-features = ["tests"]
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 clap = { version = "4", features = ["derive"] }
@@ -32,9 +31,8 @@ mailparse = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
 regex = "1"
 thiserror = "2"
-image = "0.25"
 printpdf = "0.7"
-base64 = "0.22"
+tokio = { version = "1", features = ["full"], optional = true }
 exopack = { git = "https://github.com/cochranblock/exopack", optional = true, features = ["triple_sims"] }
 
 [profile.release]
