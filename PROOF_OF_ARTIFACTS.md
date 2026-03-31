@@ -54,7 +54,9 @@ flowchart TD
 | Citation Verifier | 20 known MD cases checked — flags bad format, missing, or unverified citations |
 | Filing Generator | Motion to Modify Custody + Memorandum in Support with exhibit/citation cross-refs |
 | Exhibit Book PDF | Cover, TOC, numbered exhibits, contradiction summaries, gap analysis — court-formatted |
-| Court Form Generation | Filled MD CC-DR-007, Motion to Modify Custody, Memorandum in Support |
+| Court Form Generation | 4 MD forms: CC-DR-007 (Petition), CC-DC-CV-001 (Case Info), CC-DR-004 (Financial), CC-DR-055 (Parenting Plan) |
+| P13 Compression | All public symbols tokenized (f0-f19, T0-T22) with compression map |
+| TRIPLE SIMS | Exopack quality gate — cargo test + binary smoke test, 3x pass required |
 
 ## How to Verify
 

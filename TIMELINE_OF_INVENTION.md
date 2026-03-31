@@ -10,12 +10,41 @@
 
 ## Entries
 
-### 2026-03-30 — v0.4.0: P13 Tokenization + 4 Court Forms + Exopack + Binary Diet
+### 2026-03-30 — v0.4.0: P13 Tokenization + Dead Dep Removal + Binary Diet
 
-**What:** Kova P13 compression mapping applied — all 20 public functions (f0-f19) and 23 types (T0-T22) tokenized with doc-comment mappings. Added CC-DC-CV-001 (Case Information Report), CC-DR-004 (Financial Statement), CC-DR-055 (Parenting Plan) court forms. Exopack TRIPLE SIMS quality gate. Removed dead deps (image, base64), moved tokio to test-only. Release binary: 2.5MB stripped.
-**Why:** Kova ecosystem alignment. Court filing package was incomplete without mandatory Case Information Report. Binary size matters for zero-cloud deployment.
-**Commits:** `05dd1d1` through current
-**AI Role:** AI executed P13 rename, form generation, and dep audit. Human directed tokenization scheme, form requirements, and legal content.
+**What:** Kova P13 compression mapping applied — all 20 public functions (f0-f19) and 23 types (T0-T22) tokenized with doc-comment mappings. `docs/compression_map.md` added. Removed dead deps (image 0.25, base64 0.22 — never imported). Moved tokio to optional test-only. Main binary is now fully synchronous. .gitignore expanded. README, POA, TOI updated. Release binary: 2.5MB stripped.
+**Commit:** `d7be0b8`
+**AI Role:** AI executed P13 rename and dep audit. Human directed tokenization scheme and ecosystem alignment.
+
+### 2026-03-27 — Zero Clippy Warnings + AI Slop Eradication
+
+**What:** Fixed 8 clippy warnings: regex compiled in loop (analyze.rs), needless borrow (exhibit.rs), useless format! (filing.rs, forms.rs), redundant trim() (query.rs), too_many_arguments justified with allow (exhibit.rs, forms.rs). Eradicated P12 slop word "comprehensive" from precedent.rs.
+**Commit:** `99ea077`
+**AI Role:** AI identified and fixed all warnings. Human directed P12 compliance.
+
+### 2026-03-27 — CC-DR-004 Financial Statement + CC-DR-055 Parenting Plan
+
+**What:** Two new MD court forms. CC-DR-004: income/expense disclosure per MD Family Law §12-203 (gross income, deductions, monthly expenses, children, verification under penalty of perjury). CC-DR-055: two-page parenting plan per MD Family Law §9-109.1 (legal/physical custody, weekly schedule, 14-holiday rotation table, summer/vacation, decision-making, communication, right of first refusal, relocation, health/safety provisions, FERPA school access).
+**Commit:** `a24f62d`
+**AI Role:** AI generated form structure. Human specified MD statutory requirements and legal content.
+
+### 2026-03-27 — CC-DC-CV-001 Case Information Report
+
+**What:** Added CC-DC-CV-001 per MD Rule 20-201 — required with every circuit court domestic filing. Auto-fills court/county, parties (pro se flagged), children with computed ages, case type (custody modification), relief sought, related cases, ADR status, estimated trial time.
+**Commit:** `2c16fd6`
+**AI Role:** AI generated form. Human specified that clerk rejects filing package without this form.
+
+### 2026-03-27 — Exopack: TRIPLE SIMS Quality Gate + Stripped Release Binary
+
+**What:** Exopack optional dep behind `tests` feature. `illbethejudgeofthat-test` binary runs cargo test + --help smoke test through TRIPLE SIMS (3x). Release profile: opt-level z, LTO, codegen-units 1, strip, panic=abort.
+**Commit:** `f3e894b`
+**AI Role:** AI implemented exopack integration following oakilydokily/kova pattern. Human directed quality gate design.
+
+### 2026-03-27 — Docs: Update All Docs to Reflect 10-Stage Pipeline
+
+**What:** README rewritten with full CLI usage, all flags, output table, all 10 pipeline stages. PROOF_OF_ARTIFACTS: fixed line count and CLI flags. TIMELINE_OF_INVENTION: fixed chronological ordering. main.rs: fixed stage numbering from inconsistent [1/7]...[10/10] to [1/10]...[10/10]. Version bumped to 0.3.2.
+**Commit:** `05dd1d1`
+**AI Role:** AI audited all docs against actual code and fixed every discrepancy. Human directed scope.
 
 ### 2026-03-21 — Proof of Artifacts + Timeline + Zero-Cloud Banner
 
