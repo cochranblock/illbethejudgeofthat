@@ -8,7 +8,7 @@ Cross-project deps: **exopack** (TRIPLE SIMS, integrated), **kova** (inference/R
 
 ---
 
-1. [test] End-to-end pipeline test — feed a real mbox through all 10 stages, assert finding counts and output files exist
+~~1. [test] End-to-end pipeline test — DONE (486a205): 27 new tests, 76 total, all green~~
 2. [feature] Counter-motion template — T19::MotionContempt build_paragraphs branch (filter findings to order violations, show willfulness)
 3. [feature] Discovery response template — T19::DiscoveryResponse with interrogatory-answer format and exhibit references
 4. [feature] --filing-type CLI arg — let user choose which document to generate (default: motion-modify)
