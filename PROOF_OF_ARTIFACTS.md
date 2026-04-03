@@ -2,7 +2,7 @@
 
 # Proof of Artifacts
 
-*Concrete evidence that this project works, ships, and is real.*
+*Concrete evidence that this project works, ships, and is real.* **(v0.4.1)**
 
 > Google Takeout emails → court-ready exhibit books, legal briefs, and filled forms in one evening.
 
@@ -13,7 +13,7 @@ flowchart TD
     Takeout[Google Takeout mbox] --> Ingest[1. Ingest: mailparse]
     Ingest --> Extract[2. Extract Attachments]
     Extract --> Thread[3. Reconstruct Threads]
-    Thread --> Analyze[4. Analyze: 19 Finding Categories]
+    Thread --> Analyze[4. Analyze: 20 Finding Categories]
     Analyze --> Contradict[5. Contradiction Detection: 5 Rules]
     Contradict --> Gaps[6. Timeline Gap Analysis: 4 Types]
     Gaps --> Precedent[7. Precedent Matching: MD §9-101.1]
@@ -31,14 +31,14 @@ flowchart TD
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | 4,482 |
+| Lines of Rust | 6,125 |
 | Pipeline stages | 10 (ingest → forms) |
-| Finding categories | 19 (IEP violation, alienation, food record, behavioral incident, etc.) |
+| Finding categories | 20 (IEP violation, alienation, food record, behavioral incident, admission against interest, etc.) |
 | Contradiction types | 5 (school vs. parent, food refusal, attendance, custody week, behavioral) |
 | Gap types | 4 (missing reports, communication silence, custody week gaps, thread abandonment) |
-| Precedent cases | 17 validated Maryland citations |
+| Precedent cases | 11 mapped to findings, 20 in citation verification DB |
 | Best interest factors | 12 (MD §9-101.1 mapping) |
-| MoE experts | 4 (Judge, Statute, Complaint, Appellate) with gating network |
+| MoE experts | 4 (Judge, Statute, Complaint, Appellate) with gating network — heuristic scoring, sled DB stubs not yet populated |
 | Sample case output | 500+ findings, 100+ contradictions, 50+ gaps → court-ready filing |
 
 ## Key Artifacts
@@ -46,10 +46,10 @@ flowchart TD
 | Artifact | Description |
 |----------|-------------|
 | 10-Stage Pipeline | Raw mbox → exhibit book in one command. No manual exhibit numbering |
-| Finding Extraction | 19 custody-relevant categories with custody-week assignment (plaintiff vs. defendant) |
+| Finding Extraction | 20 custody-relevant categories with custody-week assignment (plaintiff vs. defendant) |
 | Contradiction Engine | Cross-references school reports against parent claims — surfaces documentary lies |
 | Timeline Gap Analysis | Detects missing daily reports, communication silences, thread abandonment |
-| Precedent Matching | 17 Maryland cases mapped to findings → automatic brief with case law + exhibit cross-refs |
+| Precedent Matching | 11 Maryland cases mapped to findings → automatic brief with case law + exhibit cross-refs (20 in citation DB) |
 | MoE Legal Prediction | 4-expert architecture with gating network + challenge layer (flags weaknesses) |
 | Citation Verifier | 20 known MD cases checked — flags bad format, missing, or unverified citations |
 | Filing Generator | Motion to Modify Custody + Memorandum in Support with exhibit/citation cross-refs |

@@ -14,7 +14,7 @@
 
 Pro se custody case builder. Google Takeout → Court-ready exhibit book + filled forms.
 
-**Status: scaffold (v0.4.0).** The core pipeline compiles, runs, and produces output. The legal prediction module is stubbed. See [What Works / What Doesn't](#what-works) below.
+**Status: scaffold (v0.4.1).** The core pipeline compiles, runs, and produces output. The legal prediction module is stubbed. See [What Works / What Doesn't](#what-works) below.
 
 ## What it does
 
@@ -23,7 +23,7 @@ Pro se custody case builder. Google Takeout → Court-ready exhibit book + fille
 1. **Ingest** — parses mbox/Google Takeout email archives via `mailparse`
 2. **Extract** — pulls attachments from MIME messages
 3. **Thread** — reconstructs conversation threads (Gmail IDs → In-Reply-To → subject matching)
-4. **Analyze** — detects 19 custody-relevant finding categories (IEP violations, alienation, food records, etc.)
+4. **Analyze** — detects 20 custody-relevant finding categories (IEP violations, alienation, food records, etc.)
 5. **Contradict** — cross-references school reports against parent claims (5 contradiction types)
 6. **Gaps** — detects missing daily reports, communication silences, abandoned threads (4 gap types)
 7. **Precedent** — matches findings to 17 Maryland case citations
@@ -42,7 +42,7 @@ Also includes: court form generation (4 MD forms), interactive query REPL (`--qu
 | `ingest.rs` | Working | mbox parsing, MIME extraction, recursive subpart handling |
 | `parse.rs` | Working | Attachment extraction, filename sanitization |
 | `thread.rs` | Working | 3-tier thread reconstruction (Gmail ID → In-Reply-To → subject) |
-| `analyze.rs` | Working | 19 finding categories with keyword detection, IDEA section tagging |
+| `analyze.rs` | Working | 20 finding categories with keyword detection, IDEA section tagging |
 | `contradict.rs` | Working | 5 contradiction types (school vs parent claims) |
 | `gaps.rs` | Working | 4 gap types (missing reports, silence, abandoned threads, custody weeks) |
 | `precedent.rs` | Working | 17 Maryland cases mapped to findings |

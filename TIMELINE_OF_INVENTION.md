@@ -69,7 +69,7 @@
 
 ### 2026-03-14 — v0.3.1: Precedent Matching + Legal Brief
 
-**What:** 17 Maryland case citations mapped to findings. Automatic legal brief generation with factor-by-factor argument structure.
+**What:** 11 Maryland case citations mapped to findings (20 in citation verification DB). Automatic legal brief generation with factor-by-factor argument structure.
 **Commit:** `10a7cf2`
 **AI Role:** AI wrote brief generation code. Human provided case law and verified citation accuracy.
 
@@ -92,6 +92,12 @@
 **Why:** Pro se litigant needed court-ready evidence from Google Takeout. No existing tool does this.
 **Commit:** `d2620c6`
 **AI Role:** AI generated scaffold. Human designed the entire legal workflow based on real custody case experience.
+
+### 2026-04-01 — v0.4.1: Honest Docs + Warning Fixes
+
+**What:** README rewritten with scaffold status — "What Works" vs "Placeholder" tables, known limitations documented. Fixed 2 test warnings (unused PathBuf import, unused start_day variable). Tracked litigation support docs (email_to_opposing_counsel.md, exhibit_work_activity.md). All docs audited: line count corrected (4,482 → 6,125), finding categories (19 → 20), precedent count clarified (11 matched, 20 in citation DB).
+**Commit:** `47be791` (README + warnings + tracking), plus doc correction commit
+**AI Role:** AI audited all docs against actual code and fixed every discrepancy. Human directed honesty-first approach.
 
 ---
 

@@ -94,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             NaiveDate::from_ymd_opt(2025, 1, 2).unwrap()
         });
 
-    println!("illbethejudgeofthat v0.4.0");
+    println!("illbethejudgeofthat v0.4.1");
     println!("=========================");
     println!();
     println!("Plaintiff:      {}", cli.plaintiff);

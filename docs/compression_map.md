@@ -1,3 +1,5 @@
+<!-- Unlicense — cochranblock.org -->
+
 # Compression Map — illbethejudgeofthat
 
 > P13 tokenization. Every public symbol has a compressed identifier.
