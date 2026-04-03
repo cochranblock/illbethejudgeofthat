@@ -71,7 +71,7 @@ Also includes: court form generation (4 MD forms), interactive query REPL (`--qu
 - Legal MoE returns heuristic estimates, not trained predictions
 - `legal/` submodules are not compiled into the binary (no `mod legal` in main.rs)
 - Counter-motion and discovery response types exist (`T19` variants) but `build_paragraphs` only handles `MotionModifyCustody`
-- 7 integration tests cover parsing and arithmetic — no end-to-end pipeline test, no PDF tests
+- 49 correctness tests cover date parsing, custody week calc, all finding categories, contradictions, gaps, threads, and precedent matching — no PDF generation tests yet
 
 ## Usage
 
@@ -125,7 +125,7 @@ All public symbols follow [Kova P13 tokenization](docs/compression_map.md). Func
 
 ```bash
 cargo build --release                                    # 2.5MB stripped binary
-cargo test                                               # 7 integration tests
+cargo test                                               # 49 correctness tests
 cargo run --features tests --bin illbethejudgeofthat-test # TRIPLE SIMS quality gate
 ```
 

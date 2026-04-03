@@ -10,6 +10,17 @@
 
 ## Entries
 
+### 2026-04-03 — 49 Correctness Tests + Bug Fix + P23 Paranoia Lens
+
+**What:** Replaced 7 toy tests (string contains, arithmetic — none called crate functions) with 49 real correctness tests. Every major module tested with known inputs and expected outputs: date parsing (6 tests), custody week calculation (7 tests, every day of week verified), all 14 finding categories with sender guards, contradiction detection, gap analysis (daily report gaps, weekend exclusion, communication silence threshold, abandoned threads), thread reconstruction (3-tier matching), precedent matching (alienation→Domingues, food→health, IEP→fitness). Added src/lib.rs to expose modules for integration test access.
+
+**Bug found and fixed:** Custody interference (food attribution) triggered on plaintiff's own emails. Added sender guard — now skips when sender is plaintiff (analyze.rs).
+
+**P23 Paranoia Lens:** Red team audit of Kova pyramid architecture. Identified 10 attack vectors and failure modes: unsigned nanobyte model files (no integrity verification), training data poisoning via unfiltered crates.io corpus, unauthenticated localhost HTTP API, 60s discovery blind spot on node failure, priority queue starvation with no timeout, confidence miscalibration at 0.7 escalation threshold, bridge log injection for future model corruption, TOCTOU on mmap'd weights, split brain in mesh (no consensus), and the irreversibility of Phase 4 API key deletion.
+
+**Commits:** `47be791` (docs), `1e6964c` (doc corrections), `6f1e816` (tests + bug fix)
+**AI Role:** AI wrote all tests, found custody interference bug, conducted P23 paranoia audit. Human directed test priorities and red team scope.
+
 ### 2026-03-30 — v0.4.0: P13 Tokenization + Dead Dep Removal + Binary Diet
 
 **What:** Kova P13 compression mapping applied — all 20 public functions (f0-f19) and 23 types (T0-T22) tokenized with doc-comment mappings. `docs/compression_map.md` added. Removed dead deps (image 0.25, base64 0.22 — never imported). Moved tokio to optional test-only. Main binary is now fully synchronous. .gitignore expanded. README, POA, TOI updated. Release binary: 2.5MB stripped.

@@ -31,7 +31,7 @@ flowchart TD
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | 6,125 |
+| Lines of Rust | 6,135 (+ 781 lines of tests) |
 | Pipeline stages | 10 (ingest → forms) |
 | Finding categories | 20 (IEP violation, alienation, food record, behavioral incident, admission against interest, etc.) |
 | Contradiction types | 5 (school vs. parent, food refusal, attendance, custody week, behavioral) |
@@ -57,6 +57,8 @@ flowchart TD
 | Court Form Generation | 4 MD forms: CC-DR-007 (Petition), CC-DC-CV-001 (Case Info), CC-DR-004 (Financial), CC-DR-055 (Parenting Plan) |
 | P13 Compression | All public symbols tokenized (f0-f19, T0-T22) with compression map |
 | TRIPLE SIMS | Exopack quality gate — cargo test + binary smoke test, 3x pass required |
+| 49 Correctness Tests | Every finding category, custody week calc, contradictions, gaps, threads, precedent matching — known inputs, expected outputs |
+| P23 Paranoia Lens | Red team audit of Kova pyramid architecture (mmap security, training data poisoning, priority starvation, failure modes) |
 
 ## How to Verify
 
