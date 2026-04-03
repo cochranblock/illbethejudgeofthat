@@ -77,6 +77,80 @@ struct FilingParagraph {
     statutes: Vec<String>,
 }
 
+/// Tracks the current page and layer, creates new pages as needed.
+struct PageWriter<'a> {
+    doc: &'a PdfDocumentReference,
+    font: &'a IndirectFontRef,
+    bold: &'a IndirectFontRef,
+    y: f32,
+    page_num: usize,
+    current_layer: PdfLayerReference,
+}
+
+impl<'a> PageWriter<'a> {
+    fn new(
+        doc: &'a PdfDocumentReference,
+        font: &'a IndirectFontRef,
+        bold: &'a IndirectFontRef,
+        first_layer: PdfLayerReference,
+    ) -> Self {
+        Self {
+            doc,
+            font,
+            bold,
+            y: PAGE_H.0 - MARGIN,
+            page_num: 1,
+            current_layer: first_layer,
+        }
+    }
+
+    /// Check if we need a new page (need `lines` more lines of space).
+    fn needs_page(&self, lines: usize) -> bool {
+        self.y < MARGIN + LINE_H * lines as f32
+    }
+
+    /// Start a new page with page number footer on the current page.
+    fn new_page(&mut self) {
+        // Page number footer on current page
+        write_centered(&self.current_layer, self.font, MARGIN - LINE_H,
+            &format!("Page {}", self.page_num), 9.0);
+
+        let (new_page, new_layer) = self.doc.add_page(PAGE_W, PAGE_H, "Layer 1");
+        self.current_layer = self.doc.get_page(new_page).get_layer(new_layer);
+        self.y = PAGE_H.0 - MARGIN;
+        self.page_num += 1;
+    }
+
+    /// Ensure at least `lines` lines of space, creating a new page if needed.
+    fn ensure_space(&mut self, lines: usize) {
+        if self.needs_page(lines) {
+            self.new_page();
+        }
+    }
+
+    fn write_line_regular(&mut self, text: &str, size: f32) {
+        write_line(&self.current_layer, self.font, self.y, text, size);
+    }
+
+    fn write_line_bold(&mut self, text: &str, size: f32) {
+        write_line(&self.current_layer, self.bold, self.y, text, size);
+    }
+
+    fn write_centered_bold(&mut self, text: &str, size: f32) {
+        write_centered(&self.current_layer, self.bold, self.y, text, size);
+    }
+
+    fn advance(&mut self, amount: f32) {
+        self.y -= amount;
+    }
+
+    /// Write final page number on the last page.
+    fn finish(&self) {
+        write_centered(&self.current_layer, self.font, MARGIN - LINE_H,
+            &format!("Page {}", self.page_num), 9.0);
+    }
+}
+
 /// Generate a complete court filing as PDF.
 pub fn f16(
     ctx: &T20,
@@ -103,51 +177,46 @@ pub fn f16(
     let bold = doc.add_builtin_font(BuiltinFont::TimesBold)
         .map_err(|e| format!("bold font: {:?}", e))?;
 
-    let mut y = PAGE_H.0 - MARGIN;
-    let layer = doc.get_page(page1).get_layer(layer1);
+    let first_layer = doc.get_page(page1).get_layer(layer1);
+    let mut pw = PageWriter::new(&doc, &font, &bold, first_layer);
 
     // ── Caption Block ──
     // MD Rules 1-301: caption must include court name, case number, parties
-    y = write_caption(&layer, &font, &bold, y, ctx);
+    pw.y = write_caption(&pw.current_layer, &font, &bold, pw.y, ctx);
 
     // ── Title ──
-    y -= DOUBLE_SPACE;
-    write_centered(&layer, &bold, y, ctx.filing_type.title(), 14.0);
-    y -= DOUBLE_SPACE;
+    pw.advance(DOUBLE_SPACE);
+    pw.write_centered_bold(ctx.filing_type.title(), 14.0);
+    pw.advance(DOUBLE_SPACE);
 
     // ── Body: numbered paragraphs ──
     let paragraphs = build_paragraphs(ctx);
 
     for para in &paragraphs {
-        if y < MARGIN + LINE_H * 4.0 {
-            // New page needed — in production, create new page
-            // For now, truncate with continuation notice
-            write_line(&layer, &font, y, "     [Continued on next page]", 12.0);
-            break;
-        }
+        // Estimate space needed: text lines + citation line + spacing
+        let lines = wrap_text(&para.text, 70);
+        let needed = lines.len() + 3; // text + refs + spacing
+        pw.ensure_space(needed);
 
         // Paragraph number + text
         let prefix = format!("     {}. ", para.number);
-        write_line(&layer, &font, y, &prefix, 12.0);
+        pw.write_line_regular(&prefix, 12.0);
 
-        // Wrap text to ~65 chars per line (within margins)
-        let lines = wrap_text(&para.text, 70);
         for (i, line) in lines.iter().enumerate() {
             if i == 0 {
-                // First line after number
                 let offset_text = format!("         {}", line);
-                write_line(&layer, &font, y, &offset_text, 12.0);
+                pw.write_line_regular(&offset_text, 12.0);
             } else {
-                y -= LINE_H;
-                if y < MARGIN { break; }
+                pw.advance(LINE_H);
+                pw.ensure_space(2);
                 let offset_text = format!("     {}", line);
-                write_line(&layer, &font, y, &offset_text, 12.0);
+                pw.write_line_regular(&offset_text, 12.0);
             }
         }
 
         // Citation footnotes
         if !para.exhibits.is_empty() || !para.citations.is_empty() {
-            y -= LINE_H * 0.5;
+            pw.advance(LINE_H * 0.5);
             let mut refs = Vec::new();
             for ex in &para.exhibits {
                 refs.push(format!("Ex. {}", ex));
@@ -159,52 +228,52 @@ pub fn f16(
                 refs.push(statute.clone());
             }
             let ref_line = format!("     ({})", refs.join("; "));
-            write_line(&layer, &font, y, &ref_line, 9.0);
+            pw.write_line_regular(&ref_line, 9.0);
         }
 
-        y -= DOUBLE_SPACE;
+        pw.advance(DOUBLE_SPACE);
     }
 
     // ── Prayer for Relief ──
-    if y > MARGIN + LINE_H * 8.0 {
-        y -= DOUBLE_SPACE;
-        write_line(&layer, &bold, y, "     WHEREFORE,", 12.0);
-        y -= LINE_H;
-        write_line(&layer, &font, y,
-            &format!("     Plaintiff {} respectfully requests that this Court:", ctx.plaintiff), 12.0);
-        y -= DOUBLE_SPACE;
+    pw.ensure_space(4);
+    pw.advance(DOUBLE_SPACE);
+    pw.write_line_bold("     WHEREFORE,", 12.0);
+    pw.advance(LINE_H);
+    pw.write_line_regular(
+        &format!("     Plaintiff {} respectfully requests that this Court:", ctx.plaintiff), 12.0);
+    pw.advance(DOUBLE_SPACE);
 
-        let reliefs = prayer_for_relief(&ctx.filing_type);
-        for (i, relief) in reliefs.iter().enumerate() {
-            y -= LINE_H;
-            if y < MARGIN { break; }
-            write_line(&layer, &font, y, &format!("          {}. {}", i + 1, relief), 12.0);
-        }
+    let reliefs = prayer_for_relief(&ctx.filing_type);
+    for (i, relief) in reliefs.iter().enumerate() {
+        pw.ensure_space(2);
+        pw.advance(LINE_H);
+        pw.write_line_regular(&format!("          {}. {}", i + 1, relief), 12.0);
     }
 
     // ── Certificate of Service ──
-    if y > MARGIN + LINE_H * 6.0 {
-        y -= DOUBLE_SPACE * 2.0;
-        write_centered(&layer, &bold, y, "CERTIFICATE OF SERVICE", 12.0);
-        y -= DOUBLE_SPACE;
-        write_line(&layer, &font, y,
-            "     I hereby certify that on this ___ day of _______, 20__, a copy of the",
-            11.0);
-        y -= LINE_H;
-        write_line(&layer, &font, y,
-            "     foregoing was served upon the Defendant by:",
-            11.0);
-        y -= DOUBLE_SPACE;
-        write_line(&layer, &font, y, "     [ ] First-class mail, postage prepaid", 11.0);
-        y -= LINE_H;
-        write_line(&layer, &font, y, "     [ ] Hand delivery", 11.0);
-        y -= LINE_H;
-        write_line(&layer, &font, y, "     [ ] MDEC electronic filing", 11.0);
-        y -= DOUBLE_SPACE * 2.0;
-        write_line(&layer, &font, y, "     ________________________________", 12.0);
-        y -= LINE_H;
-        write_line(&layer, &font, y, &format!("     {}, Pro Se", ctx.plaintiff), 12.0);
-    }
+    pw.ensure_space(10); // need enough room for the whole block
+    pw.advance(DOUBLE_SPACE * 2.0);
+    pw.write_centered_bold("CERTIFICATE OF SERVICE", 12.0);
+    pw.advance(DOUBLE_SPACE);
+    pw.write_line_regular(
+        "     I hereby certify that on this ___ day of _______, 20__, a copy of the",
+        11.0);
+    pw.advance(LINE_H);
+    pw.write_line_regular(
+        "     foregoing was served upon the Defendant by:",
+        11.0);
+    pw.advance(DOUBLE_SPACE);
+    pw.write_line_regular("     [ ] First-class mail, postage prepaid", 11.0);
+    pw.advance(LINE_H);
+    pw.write_line_regular("     [ ] Hand delivery", 11.0);
+    pw.advance(LINE_H);
+    pw.write_line_regular("     [ ] MDEC electronic filing", 11.0);
+    pw.advance(DOUBLE_SPACE * 2.0);
+    pw.write_line_regular("     ________________________________", 12.0);
+    pw.advance(LINE_H);
+    pw.write_line_regular(&format!("     {}, Pro Se", ctx.plaintiff), 12.0);
+
+    pw.finish();
 
     doc.save(&mut BufWriter::new(
         std::fs::File::create(&path).map_err(|e| e.to_string())?

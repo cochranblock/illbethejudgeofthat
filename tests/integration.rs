@@ -779,3 +779,135 @@ fn empty_body_produces_no_findings() {
     let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
     assert!(findings.is_empty(), "empty body should produce no findings");
 }
+
+// ============================================================
+// PDF GENERATION — smoke tests + multi-page verification
+// ============================================================
+
+use illbethejudgeofthat::filing::{f16, T19, T20};
+use illbethejudgeofthat::exhibit::f14;
+use illbethejudgeofthat::forms::f15;
+
+fn test_output_dir() -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join("illbethejudgeofthat_test");
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+fn make_ctx(findings: Vec<T6>, filing_type: T19) -> T20 {
+    let precedents = f11(&findings);
+    let threads = f2(&[]);
+    let contradictions = f7(&findings, &threads);
+    T20 {
+        plaintiff: "Michael Cochran".into(),
+        defendant: "Jane Doe".into(),
+        case_number: "C-99-CV-25-000123".into(),
+        county: "Anne Arundel".into(),
+        court: "Circuit Court".into(),
+        findings,
+        precedents,
+        contradictions,
+        filing_type,
+    }
+}
+
+#[test]
+fn pdf_motion_produces_valid_file() {
+    let dir = test_output_dir();
+    let emails = vec![
+        email(0, "mom@test.com", "dad@test.com",
+            "Visit", "Wed, 08 Jan 2025 18:00:00",
+            "The kids don't feel safe going to your house."),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    let ctx = make_ctx(findings, T19::MotionModifyCustody);
+    let path = f16(&ctx, &dir).unwrap();
+
+    assert!(path.exists(), "motion PDF should exist");
+    let bytes = std::fs::read(&path).unwrap();
+    assert!(bytes.len() > 100, "PDF should not be empty");
+    assert_eq!(&bytes[0..5], b"%PDF-", "file should start with PDF header");
+}
+
+#[test]
+fn pdf_memorandum_produces_valid_file() {
+    let dir = test_output_dir();
+    let ctx = make_ctx(vec![], T19::MemorandumInSupport);
+    let path = f16(&ctx, &dir).unwrap();
+
+    assert!(path.exists());
+    let bytes = std::fs::read(&path).unwrap();
+    assert_eq!(&bytes[0..5], b"%PDF-");
+}
+
+#[test]
+fn pdf_multi_page_motion_does_not_truncate() {
+    let dir = test_output_dir();
+    // Generate enough findings to force multiple pages (50+ paragraphs)
+    let mut emails = Vec::new();
+    for i in 0..50 {
+        emails.push(email(i, "mom@test.com", "dad@test.com",
+            &format!("Issue {}", i),
+            &format!("Mon, {:02} Jan 2025 09:00:00", (i % 28) + 1),
+            &format!("I forgot to handle issue {}. I should have done it. Sorry about that.", i)));
+    }
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    assert!(findings.len() >= 40, "should produce many findings for multi-page test");
+
+    let ctx = make_ctx(findings, T19::MotionModifyCustody);
+    let path = f16(&ctx, &dir).unwrap();
+
+    let bytes = std::fs::read(&path).unwrap();
+    let content = String::from_utf8_lossy(&bytes);
+    assert!(!content.contains("[Continued on next page]"),
+        "multi-page PDF should NOT contain truncation notice");
+    assert!(bytes.len() > 5000,
+        "50+ paragraph filing should produce substantial PDF (got {} bytes)", bytes.len());
+}
+
+#[test]
+fn pdf_court_forms_produce_valid_files() {
+    let dir = test_output_dir();
+    let paths = f15(
+        &dir, "Michael Cochran", "Jane Doe",
+        "Hazel", "06/11/2018",
+        &Some("C-99-CV-25-000123".into()),
+        "Anne Arundel", "MD", false,
+    ).unwrap();
+
+    assert_eq!(paths.len(), 4, "should produce 4 MD court forms");
+    for path in &paths {
+        assert!(path.exists(), "form {} should exist", path.display());
+        let bytes = std::fs::read(path).unwrap();
+        assert_eq!(&bytes[0..5], b"%PDF-", "{} should be valid PDF", path.display());
+    }
+}
+
+#[test]
+fn pdf_exhibit_book_produces_valid_file() {
+    let dir = test_output_dir();
+    let emails = vec![
+        email(0, "teacher@chimes.org", "dad@test.com",
+            "Lunch", "Mon, 06 Jan 2025 12:00:00",
+            "Hazel refused all food at lunch today."),
+        email(1, "mom@test.com", "dad@test.com",
+            "Visit", "Tue, 07 Jan 2025 18:00:00",
+            "The kids don't feel safe with you."),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    let threads = f2(&emails);
+    let contradictions = f7(&findings, &threads);
+    let gaps = f9(&emails, &findings, &threads);
+
+    let path = f14(
+        &findings, &contradictions, &gaps, &dir,
+        "Michael Cochran", "Jane Doe",
+        &Some("C-99-CV-25-000123".into()),
+        "Anne Arundel", "MD",
+    ).unwrap();
+
+    assert!(path.exists(), "exhibit book should exist");
+    let bytes = std::fs::read(&path).unwrap();
+    assert_eq!(&bytes[0..5], b"%PDF-");
+    assert!(bytes.len() > 1000, "exhibit book with 2 findings should be non-trivial");
+}

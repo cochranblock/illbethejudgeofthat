@@ -67,7 +67,7 @@ Also includes: court form generation (4 MD forms), interactive query REPL (`--qu
 | `legal/stats.rs` | Stub | Statistics generation |
 
 **Known limitations:**
-- Filing PDF truncates to one page (no page-break logic yet)
+- Filing PDF supports multi-page with page numbers (no "Page X of Y" total yet)
 - Legal MoE returns heuristic estimates, not trained predictions
 - `legal/` submodules are not compiled into the binary (no `mod legal` in main.rs)
 - Counter-motion and discovery response types exist (`T19` variants) but `build_paragraphs` only handles `MotionModifyCustody`
@@ -109,7 +109,7 @@ All artifacts land in `./filing/` (or `--output`):
 | `legal_brief_outline.txt` | Factor-by-factor brief |
 | `timeline.csv` | Spreadsheet-friendly timeline |
 | `PLAINTIFF_EXHIBIT_BOOK.pdf` | Court-formatted exhibit book |
-| `MOTION_MODIFY_CUSTODY.pdf` | Filed-ready motion (single page — multi-page TBD) |
+| `MOTION_MODIFY_CUSTODY.pdf` | Filed-ready motion (multi-page with page numbers) |
 | `MEMORANDUM_IN_SUPPORT.pdf` | Supporting memorandum |
 | `citation_verification.json` | Citation verification report |
 | `CC-DR-007_FILLED.pdf` | Petition to Modify Custody (MD) |
@@ -125,7 +125,7 @@ All public symbols follow [Kova P13 tokenization](docs/compression_map.md). Func
 
 ```bash
 cargo build --release                                    # 2.5MB stripped binary
-cargo test                                               # 49 correctness tests
+cargo test                                               # 54 correctness + PDF tests
 cargo run --features tests --bin illbethejudgeofthat-test # TRIPLE SIMS quality gate
 ```
 
