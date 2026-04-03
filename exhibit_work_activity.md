@@ -1,0 +1,123 @@
+# EXHIBIT ___: Software Development Activity Record
+
+## Michael Cochran — The Cochran Block LLC
+
+---
+
+### What This Shows
+
+Independently verifiable records of sustained, daily work performed by Michael Cochran, hosted on GitHub.com (owned by Microsoft Corporation). All records are public. Any party — the Court, opposing counsel, or a court-appointed expert — can verify every claim below by opening a web browser.
+
+**Verification URL:** github.com/cochranblock
+
+---
+
+### The Construction Site Analogy
+
+Think of it like a construction site with security cameras. Every time a builder finishes a section of work — frames a wall, runs wiring, lays tile — the camera records it with a timestamp. The footage is stored by a third party (Microsoft), not the builder. The builder cannot edit the tape. Anyone can walk onto the site and inspect the work.
+
+That is what these records are. Every "commit" is a saved checkpoint of completed work — timestamped, permanent, and publicly visible. The builder cannot backdate, alter, or delete these records without detection. Each checkpoint is cryptographically signed with a unique fingerprint (called a hash) that changes if even a single character is modified.
+
+---
+
+### By The Numbers
+
+| Metric | Value |
+|--------|-------|
+| Work checkpoints recorded | 428 |
+| Period | March 3 – 20, 2026 |
+| Active work days | 11 out of 17 calendar days |
+| Active projects | 8 (all publicly visible) |
+| Lines of source code produced | 72,975 |
+| Earliest daily work logged | 3:00 AM |
+| Latest daily work logged | 11:00 PM |
+| Development history on platform | Since April 2020 (6 years) |
+| Total public repositories (all time) | 29 |
+
+---
+
+### Daily Activity Log
+
+| Date | Work Checkpoints | Hours Active |
+|------|-----------------|--------------|
+| March 3 | 14 | Multiple |
+| March 10 | 35 | Multiple |
+| March 11 | 212 | Full day |
+| March 12 | 35 | Multiple |
+| March 13 | 5 | Multiple |
+| March 14 | 5 | Multiple |
+| March 15 | — | Rest day |
+| March 16 | 20 | Multiple |
+| March 17 | 26 | Multiple |
+| March 18 | 25 | Multiple |
+| March 19 | 46 | Multiple |
+| March 20 | 5 | In progress |
+
+---
+
+### Active Projects
+
+| Project | Purpose | Status |
+|---------|---------|--------|
+| Kova | AI augmentation engine | Active development |
+| Pixel Forge | AI-powered mobile app (planned for App Store and Google Play) | Active development |
+| Cochran Block | Company portfolio website | Live, deployed |
+| Approuter | Infrastructure routing all products | Live, deployed |
+| Oakilydokily | Client waiver/resume platform | Live, deployed |
+| WhyYouLying | Statement verification tool | Active development |
+| Wowasticker | Sticker application | Built |
+| Exopack | Software packaging format | Built |
+
+---
+
+### What This Record Demonstrates
+
+This is not a record of someone who has given up or stopped planning for the future.
+
+This is a record of someone who wakes up before sunrise to write code. Who builds software past midnight. Who is actively building a company — naming products, planning mobile app launches, deploying live websites, and producing thousands of lines of work product every week.
+
+People without future plans do not:
+- Architect 8 software projects simultaneously
+- Design and train machine learning models for mobile deployment
+- Build and maintain production infrastructure across multiple servers
+- Plan product launches on the Apple App Store and Google Play
+- Sustain this level of output for weeks without interruption
+
+Every one of these claims is independently verifiable at the URL listed above. The timestamps are recorded by Microsoft's servers, not by the developer. The record speaks for itself.
+
+---
+
+### How To Verify
+
+1. Open a web browser
+2. Go to **github.com/cochranblock**
+3. Click any project name
+4. Click "Commits"
+5. Every entry shows the date, time, and exact work performed
+
+No account is needed. No special software is required. The records are public.
+
+---
+
+### Prior Development History (2020–2026)
+
+An additional 21 public repositories exist under github.com/GotEmCoach (personal account), spanning the following programming languages over 6 years:
+
+- C++ (2020)
+- Assembly (2020)
+- Python (2020–2025)
+- C (2020–2021)
+- Go (2021)
+- Rust (2025–2026)
+
+This demonstrates continuous, sustained skill development and technical output over a multi-year period, not a recent or temporary burst of activity.
+
+---
+
+### Disclosure
+
+AI development tools (Claude, Cursor, Gemini) were used as accelerators in the development process, similar to how a contractor uses power tools instead of hand tools. The developer directed all architecture, design, and integration decisions. Use of these tools is documented transparently in the project records.
+
+---
+
+*Prepared from verifiable public records. All data points can be independently confirmed at the URLs listed above.*

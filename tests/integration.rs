@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 /// Tests that the mbox parser splits emails on "=== EMAIL" boundaries
 #[test]
 fn ingest_splits_on_email_boundaries() {
@@ -65,7 +63,7 @@ fn keyword_detection_finds_patterns() {
 fn custody_week_alternates_on_schedule() {
     // Given a known start date where Parent A has custody,
     // verify the week alternates correctly
-    let start_day = 0; // Thursday index
+    let _start_day = 0; // Thursday index
     let parent_a_weeks: Vec<usize> = (0..10).filter(|w| w % 2 == 0).collect();
     let parent_b_weeks: Vec<usize> = (0..10).filter(|w| w % 2 == 1).collect();
 

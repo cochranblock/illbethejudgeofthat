@@ -14,20 +14,64 @@
 
 Pro se custody case builder. Google Takeout → Court-ready exhibit book + filled forms.
 
+**Status: scaffold (v0.4.0).** The core pipeline compiles, runs, and produces output. The legal prediction module is stubbed. See [What Works / What Doesn't](#what-works) below.
+
 ## What it does
 
-1. **Ingest** — parses mbox/Google Takeout email archives
+10-stage pipeline from email archive to court-ready filing:
+
+1. **Ingest** — parses mbox/Google Takeout email archives via `mailparse`
 2. **Extract** — pulls attachments from MIME messages
 3. **Thread** — reconstructs conversation threads (Gmail IDs → In-Reply-To → subject matching)
 4. **Analyze** — detects 19 custody-relevant finding categories (IEP violations, alienation, food records, etc.)
-5. **Contradict** — cross-references school reports against parent claims
-6. **Gaps** — detects missing daily reports, communication silences, abandoned threads
+5. **Contradict** — cross-references school reports against parent claims (5 contradiction types)
+6. **Gaps** — detects missing daily reports, communication silences, abandoned threads (4 gap types)
 7. **Precedent** — matches findings to 17 Maryland case citations
 8. **Exhibit** — builds numbered PDF exhibit book (cover, TOC, exhibits, appendices)
 9. **Cite Verify** — checks all case citations against known Maryland case law
 10. **Filing** — generates Motion to Modify Custody + Memorandum in Support with exhibit/citation tracing
 
-Also includes: court form generation (MD CC-DR-007), interactive query REPL (`--query`), and a Mixture of Experts legal prediction engine (`legal/`).
+Also includes: court form generation (4 MD forms), interactive query REPL (`--query`), and a Mixture of Experts legal prediction module (`legal/`).
+
+## What Works
+
+**Compiles and runs — real implementations:**
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| `ingest.rs` | Working | mbox parsing, MIME extraction, recursive subpart handling |
+| `parse.rs` | Working | Attachment extraction, filename sanitization |
+| `thread.rs` | Working | 3-tier thread reconstruction (Gmail ID → In-Reply-To → subject) |
+| `analyze.rs` | Working | 19 finding categories with keyword detection, IDEA section tagging |
+| `contradict.rs` | Working | 5 contradiction types (school vs parent claims) |
+| `gaps.rs` | Working | 4 gap types (missing reports, silence, abandoned threads, custody weeks) |
+| `precedent.rs` | Working | 17 Maryland cases mapped to findings |
+| `exhibit.rs` | Working | PDF exhibit book via `printpdf` (cover, TOC, exhibits, appendices) |
+| `cite_verify.rs` | Working | 20 known MD cases verified against citation format |
+| `filing.rs` | Working | Motion + Memorandum PDFs with caption block, numbered paragraphs, prayer for relief |
+| `forms.rs` | Working | CC-DR-007, CC-DC-CV-001, CC-DR-004, CC-DR-055 (4 Maryland court forms) |
+| `query.rs` | Working | Interactive REPL: filter by category, date, sender, custody week, keyword |
+| `main.rs` | Working | Full 10-stage pipeline orchestration |
+
+**Placeholder / stubbed:**
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| `legal/mod.rs` | Partial | MoE architecture works with 4 experts, but uses heuristic scoring (no real court data) |
+| `legal/store.rs` | Stub | sled DB interface — function signatures only |
+| `legal/cases.rs` | Stub | CaseHarvester CSV ingest — not wired in |
+| `legal/complaints.rs` | Stub | MSDE complaint data loader |
+| `legal/opinions.rs` | Stub | Appellate opinion scraper |
+| `legal/court.rs` | Stub | Judge/court roster data |
+| `legal/ingest.rs` | Stub | DB population orchestrator |
+| `legal/stats.rs` | Stub | Statistics generation |
+
+**Known limitations:**
+- Filing PDF truncates to one page (no page-break logic yet)
+- Legal MoE returns heuristic estimates, not trained predictions
+- `legal/` submodules are not compiled into the binary (no `mod legal` in main.rs)
+- Counter-motion and discovery response types exist (`T19` variants) but `build_paragraphs` only handles `MotionModifyCustody`
+- 7 integration tests cover parsing and arithmetic — no end-to-end pipeline test, no PDF tests
 
 ## Usage
 
@@ -65,13 +109,13 @@ All artifacts land in `./filing/` (or `--output`):
 | `legal_brief_outline.txt` | Factor-by-factor brief |
 | `timeline.csv` | Spreadsheet-friendly timeline |
 | `PLAINTIFF_EXHIBIT_BOOK.pdf` | Court-formatted exhibit book |
-| `MOTION_MODIFY_CUSTODY.pdf` | Filed-ready motion |
+| `MOTION_MODIFY_CUSTODY.pdf` | Filed-ready motion (single page — multi-page TBD) |
 | `MEMORANDUM_IN_SUPPORT.pdf` | Supporting memorandum |
 | `citation_verification.json` | Citation verification report |
 | `CC-DR-007_FILLED.pdf` | Petition to Modify Custody (MD) |
-| `CC-DC-CV-001_CASE_INFO_REPORT.pdf` | Case Information Report (required) |
-| `CC-DR-004_FINANCIAL_STATEMENT.pdf` | Income/expense disclosure |
-| `CC-DR-055_PARENTING_PLAN.pdf` | Proposed custody schedule |
+| `CC-DC-CV-001_CASE_INFO_REPORT.pdf` | Case Information Report (required with every MD filing) |
+| `CC-DR-004_FINANCIAL_STATEMENT.pdf` | Income/expense disclosure (MD §12-203) |
+| `CC-DR-055_PARENTING_PLAN.pdf` | Proposed custody schedule (MD §9-109.1) |
 
 ## Compression Map
 
@@ -81,6 +125,7 @@ All public symbols follow [Kova P13 tokenization](docs/compression_map.md). Func
 
 ```bash
 cargo build --release                                    # 2.5MB stripped binary
+cargo test                                               # 7 integration tests
 cargo run --features tests --bin illbethejudgeofthat-test # TRIPLE SIMS quality gate
 ```
 

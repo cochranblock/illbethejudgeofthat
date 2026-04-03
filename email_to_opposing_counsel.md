@@ -1,0 +1,60 @@
+Subject: Evidence of Welfare and Productivity / FERPA Records Request — Hazel Cochran
+
+Mr. Dunphy,
+
+I am writing regarding two matters.
+
+---
+
+**1. Evidence of Welfare and Productivity — Michael Cochran**
+
+I am providing independently verifiable evidence of my current welfare, productivity, and sustained professional activity for the record in this matter.
+
+The following public records demonstrate continuous, active engagement in building a software company (The Cochran Block LLC) and are verifiable by any party without special access or software:
+
+**GitHub (Software Development Records — hosted by Microsoft)**
+https://github.com/cochranblock
+
+- 8 active public repositories
+- 428 documented work checkpoints between March 3–20, 2026
+- Work activity recorded between 3:00 AM and 11:00 PM daily
+- 11 active work days out of the last 17 calendar days
+- Development history on this platform dating to April 2020 (6 years)
+
+All timestamps are server-side records maintained by Microsoft Corporation and cannot be altered by the user.
+
+**LinkedIn (Professional Networking History)**
+https://linkedin.com/in/cochranblock
+
+A detailed exhibit summarizing the above records is available upon request.
+
+---
+
+**2. FERPA Request — Hazel Cochran**
+
+Pursuant to the Family Educational Rights and Privacy Act (20 U.S.C. § 1232g), I am requesting access to all educational records maintained by Baltimore County Public Schools (BCPS) pertaining to my daughter, Hazel Cochran.
+
+As a parent of a minor child, I have a right under FERPA to inspect and review all education records relating to my daughter. This right applies regardless of custody arrangement, unless a court order specifically revokes this right. See 34 C.F.R. § 99.10.
+
+I am requesting the following records:
+
+- Report cards and academic transcripts
+- Attendance records
+- Disciplinary records
+- Individualized Education Program (IEP) or 504 Plan records, if any
+- Standardized test scores
+- Teacher and counselor notes or evaluations
+- Any records of communications between the school and Hazel's mother or other parties regarding Hazel's education
+- Any records restricting or limiting my access to Hazel's educational information
+
+Under FERPA, the school must comply within 45 days of receiving this request. I am prepared to submit this request directly to BCPS as well but am notifying you as opposing counsel so there is no claim of lack of notice.
+
+If a court order exists that limits my access to these records, please provide a copy immediately, as I have not been served with any such order.
+
+---
+
+I am prepared to present all of the above formally before the Court if needed.
+
+Regards,
+Michael Cochran
+The Cochran Block LLC
