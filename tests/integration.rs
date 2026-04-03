@@ -3,11 +3,13 @@
 // These test real functions with known inputs and expected outputs.
 
 use chrono::NaiveDate;
-use illbethejudgeofthat::analyze::{f4, f5, T6, T7, T8};
-use illbethejudgeofthat::contradict::{f7, T11};
-use illbethejudgeofthat::gaps::{f9, GapType};
-use illbethejudgeofthat::thread::f2;
-use illbethejudgeofthat::precedent::f11;
+use illbethejudgeofthat::analyze::{f4, f5, f6, T6, T7, T8};
+use illbethejudgeofthat::contradict::{f7, f8, T11};
+use illbethejudgeofthat::gaps::{f9, f10, GapType};
+use illbethejudgeofthat::thread::{f2, f3};
+use illbethejudgeofthat::precedent::{f11, f12, f13};
+use illbethejudgeofthat::ingest::f0;
+use illbethejudgeofthat::cite_verify::{f17, T22};
 use illbethejudgeofthat::ingest::T0;
 
 /// Build a test email with sensible defaults.
@@ -910,4 +912,577 @@ fn pdf_exhibit_book_produces_valid_file() {
     let bytes = std::fs::read(&path).unwrap();
     assert_eq!(&bytes[0..5], b"%PDF-");
     assert!(bytes.len() > 1000, "exhibit book with 2 findings should be non-trivial");
+}
+
+// ============================================================
+// STAGE 1 — INGEST (f0): mbox parsing from a real temp file
+// ============================================================
+
+fn make_mbox(messages: &[(&str, &str, &str, &str, &str)]) -> String {
+    // messages: (from_addr, to_addr, subject, date, body)
+    let mut mbox = String::new();
+    for (i, (from_addr, to_addr, subject, date, body)) in messages.iter().enumerate() {
+        mbox.push_str(&format!("From {from_addr} Mon Jan 01 00:00:00 2025\n"));
+        mbox.push_str(&format!("From: {from_addr}\n"));
+        mbox.push_str(&format!("To: {to_addr}\n"));
+        mbox.push_str(&format!("Subject: {subject}\n"));
+        mbox.push_str(&format!("Date: {date}\n"));
+        mbox.push_str(&format!("Message-ID: <msg-{i}@test.example.com>\n"));
+        mbox.push_str("Content-Type: text/plain; charset=utf-8\n");
+        mbox.push_str("\n");
+        mbox.push_str(body);
+        mbox.push_str("\n\n");
+    }
+    mbox
+}
+
+#[test]
+fn ingest_f0_parses_minimal_mbox() {
+    let mbox = make_mbox(&[
+        ("teacher@chimes.org", "dad@test.com",
+         "Daily Communication", "Mon, 06 Jan 2025 09:00:00",
+         "Hazel had a great day today."),
+        ("mom@test.com", "dad@test.com",
+         "Visit", "Tue, 07 Jan 2025 18:00:00",
+         "The kids don't feel safe going to your house."),
+    ]);
+
+    let tmp = std::env::temp_dir().join("test_ingest.mbox");
+    std::fs::write(&tmp, &mbox).unwrap();
+
+    let emails = f0(&tmp).unwrap();
+    assert_eq!(emails.len(), 2, "should parse 2 emails from mbox");
+    assert!(emails[0].from.contains("chimes.org"), "first email from chimes");
+    assert!(emails[1].from.contains("mom@test.com"), "second email from mom");
+    assert!(emails[0].body.contains("great day"), "body text preserved");
+    std::fs::remove_file(&tmp).ok();
+}
+
+#[test]
+fn ingest_f0_handles_empty_mbox() {
+    let tmp = std::env::temp_dir().join("test_ingest_empty.mbox");
+    std::fs::write(&tmp, "").unwrap();
+    let emails = f0(&tmp).unwrap();
+    assert!(emails.is_empty(), "empty mbox produces no emails");
+    std::fs::remove_file(&tmp).ok();
+}
+
+#[test]
+fn ingest_f0_assigns_sequential_indices() {
+    let mbox = make_mbox(&[
+        ("a@test.com", "b@test.com", "First", "Mon, 06 Jan 2025 09:00:00", "body one"),
+        ("b@test.com", "a@test.com", "Second", "Tue, 07 Jan 2025 09:00:00", "body two"),
+        ("c@test.com", "a@test.com", "Third", "Wed, 08 Jan 2025 09:00:00", "body three"),
+    ]);
+    let tmp = std::env::temp_dir().join("test_ingest_idx.mbox");
+    std::fs::write(&tmp, &mbox).unwrap();
+    let emails = f0(&tmp).unwrap();
+    assert_eq!(emails.len(), 3);
+    assert_eq!(emails[0].index, 0);
+    assert_eq!(emails[1].index, 1);
+    assert_eq!(emails[2].index, 2);
+    std::fs::remove_file(&tmp).ok();
+}
+
+// ============================================================
+// STAGE 2 — PARSE (f1): attachment extraction
+// ============================================================
+
+#[test]
+fn parse_f1_extracts_no_attachments_from_plain_emails() {
+    use illbethejudgeofthat::parse::f1;
+    let emails = vec![
+        email(0, "teacher@chimes.org", "dad@test.com",
+            "Daily", "Mon, 06 Jan 2025", "No attachments here."),
+    ];
+    let dir = test_output_dir().join("parse_test");
+    std::fs::create_dir_all(&dir).unwrap();
+    let attachments = f1(&emails, &dir).unwrap();
+    assert!(attachments.is_empty(), "plain email has no attachments");
+}
+
+// ============================================================
+// STAGE 3 — THREAD (f3): summary output
+// ============================================================
+
+#[test]
+fn thread_f3_produces_non_empty_summary() {
+    let emails = vec![
+        email(0, "mom@test.com", "dad@test.com",
+            "Visit schedule", "Mon, 06 Jan 2025 09:00:00",
+            "Can we discuss the schedule?"),
+        email(1, "dad@test.com", "mom@test.com",
+            "Re: Visit schedule", "Tue, 07 Jan 2025 09:00:00",
+            "Sure, happy to discuss."),
+    ];
+    let threads = f2(&emails);
+    let summary = f3(&threads);
+    assert!(!summary.is_empty(), "thread summary should not be empty");
+    assert!(summary.contains("thread") || summary.contains("Thread"),
+        "summary should mention threads");
+}
+
+#[test]
+fn thread_f3_handles_empty_thread_list() {
+    let summary = f3(&[]);
+    assert!(!summary.is_empty(), "empty-thread summary should still return string");
+}
+
+// ============================================================
+// STAGE 4 — ANALYZE (f6): summary statistics
+// ============================================================
+
+#[test]
+fn analyze_f6_counts_categories_correctly() {
+    let emails = vec![
+        email(0, "teacher@chimes.org", "dad@test.com",
+            "Lunch", "Mon, 06 Jan 2025 12:00:00",
+            "Hazel refused all food at lunch today."),
+        email(1, "teacher@chimes.org", "dad@test.com",
+            "Lunch", "Tue, 07 Jan 2025 12:00:00",
+            "Hazel refused all food again."),
+        email(2, "mom@test.com", "dad@test.com",
+            "Visit", "Wed, 08 Jan 2025 18:00:00",
+            "The kids don't feel safe going to your house."),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    let summary = f6(&findings);
+    assert!(summary.contains("Food Record") || summary.contains("food"),
+        "summary should mention food category");
+    assert!(summary.contains("Total"), "summary should have total count");
+}
+
+#[test]
+fn analyze_f6_empty_findings() {
+    let summary = f6(&[]);
+    assert!(summary.contains("0"), "empty findings should show 0");
+}
+
+// ============================================================
+// STAGE 5 — CONTRADICT (f8): summary output
+// ============================================================
+
+#[test]
+fn contradict_f8_produces_summary_string() {
+    let emails = vec![
+        email(0, "teacher@chimes.org", "dad@test.com",
+            "Lunch", "Mon, 06 Jan 2025 12:00:00",
+            "Hazel refused all food at lunch."),
+        email(1, "mom@test.com", "dad@test.com",
+            "Re: Lunch", "Mon, 06 Jan 2025 14:00:00",
+            "I provided lunch. She had plenty to eat."),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    let threads = f2(&emails);
+    let contradictions = f7(&findings, &threads);
+    let summary = f8(&contradictions);
+    assert!(!summary.is_empty(), "summary should not be empty");
+    assert!(summary.contains("Contradiction") || summary.contains("contradiction") || summary.contains("found"),
+        "summary should describe contradictions");
+}
+
+// ============================================================
+// STAGE 6 — GAPS (f10): summary output
+// ============================================================
+
+#[test]
+fn gaps_f10_produces_summary_string() {
+    let emails = vec![
+        email(0, "teacher@chimes.org", "dad@test.com",
+            "Daily Communication", "Mon, 06 Jan 2025 09:00:00",
+            "Daily Chimes report: Hazel had a good day"),
+        email(1, "teacher@chimes.org", "dad@test.com",
+            "Daily Communication", "Mon, 27 Jan 2025 09:00:00",
+            "Daily Chimes report: Hazel had a good day"),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    let threads = f2(&emails);
+    let gaps = f9(&emails, &findings, &threads);
+    let summary = f10(&gaps);
+    assert!(!summary.is_empty(), "gap summary should not be empty");
+}
+
+#[test]
+fn gaps_f10_reports_no_gaps_for_empty_input() {
+    let summary = f10(&[]);
+    assert!(summary.contains("0"), "no gaps = 0 in summary");
+}
+
+// ============================================================
+// STAGE 7 — PRECEDENT (f12, f13): brief and summary output
+// ============================================================
+
+#[test]
+fn precedent_f13_produces_summary() {
+    let emails = vec![
+        email(0, "mom@test.com", "dad@test.com",
+            "Visit", "Mon, 06 Jan 2025 09:00:00",
+            "The kids don't feel safe going to your house."),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    let matches = f11(&findings);
+    let summary = f13(&matches);
+    assert!(!summary.is_empty(), "precedent summary should not be empty");
+}
+
+#[test]
+fn precedent_f12_brief_mentions_factors() {
+    let emails = vec![
+        email(0, "teacher@chimes.org", "dad@test.com",
+            "IEP Review", "Mon, 06 Jan 2025 10:00:00",
+            "The IEP placement was changed without prior written notice."),
+        email(1, "mom@test.com", "dad@test.com",
+            "Visit", "Wed, 08 Jan 2025 18:00:00",
+            "The kids don't feel safe."),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    let matches = f11(&findings);
+    let brief = f12(&matches, &findings);
+    assert!(!brief.is_empty(), "brief should not be empty");
+    // Brief should reference MD law factors
+    assert!(brief.contains("§") || brief.contains("factor") || brief.contains("Factor"),
+        "brief should reference legal factors");
+}
+
+// ============================================================
+// STAGE 9 — CITE VERIFY (f17): citation format checking
+// ============================================================
+
+#[test]
+fn cite_verify_f17_verifies_known_citations() {
+    let emails = vec![
+        email(0, "mom@test.com", "dad@test.com",
+            "Safety concern", "Mon, 06 Jan 2025 09:00:00",
+            "The kids don't feel safe going to your house."),
+        email(1, "teacher@chimes.org", "dad@test.com",
+            "IEP meeting", "Tue, 07 Jan 2025 10:00:00",
+            "IEP placement changed without prior written notice."),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    let matches = f11(&findings);
+    // only run f17 if there are precedent matches
+    if matches.is_empty() { return; }
+    let checks = f17(&matches);
+    assert!(!checks.is_empty(), "should produce citation checks");
+    // Every check should have a non-empty citation string
+    for c in &checks {
+        assert!(!c.citation.is_empty(), "citation should not be empty");
+    }
+}
+
+#[test]
+fn cite_verify_known_citations_verified() {
+    // A precedent for alienation should match a known DB citation
+    let emails = vec![
+        email(0, "mom@test.com", "dad@test.com",
+            "Kids upset", "Mon, 13 Jan 2025 09:00:00",
+            "The kids don't feel safe going to your house."),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+    let matches = f11(&findings);
+    if matches.is_empty() { return; }
+    let checks = f17(&matches);
+    let any_verified = checks.iter().any(|c| matches!(c.status, T22::Verified | T22::FormatOk));
+    assert!(any_verified, "at least one precedent citation should pass format check");
+}
+
+// ============================================================
+// FINDING EXTRACTION REGEX — keyword trigger coverage
+// ============================================================
+
+#[test]
+fn regex_detects_weight_various_formats() {
+    let cases = [
+        ("Hazel weighed 52 lbs today.", T7::WeightTracking),
+        ("She weighs 48 pounds at checkup.", T7::WeightTracking),
+        ("Weight recorded: 61 lb.", T7::WeightTracking),
+    ];
+    for (body, expected_cat) in &cases {
+        let emails = vec![
+            email(0, "nurse@chimes.org", "dad@test.com",
+                "Health", "Mon, 06 Jan 2025 11:00:00", body),
+        ];
+        let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+        assert!(
+            findings.iter().any(|f| f.category == *expected_cat),
+            "should detect {:?} in: {}", expected_cat, body
+        );
+    }
+}
+
+#[test]
+fn regex_detects_food_refusal_variants() {
+    let phrases = [
+        "Hazel refused all food at lunch.",
+        "She refused food this morning.",
+        "Child did not eat breakfast.",
+        "She wouldn't eat anything provided.",
+        "She would not eat the meal.",
+    ];
+    for phrase in &phrases {
+        let emails = vec![
+            email(0, "teacher@chimes.org", "dad@test.com",
+                "Lunch Report", "Mon, 06 Jan 2025 12:00:00", phrase),
+        ];
+        let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+        assert!(
+            findings.iter().any(|f| f.category == T7::FoodRecord),
+            "should detect FoodRecord in: {}", phrase
+        );
+    }
+}
+
+#[test]
+fn regex_detects_alienation_phrases() {
+    let phrases = [
+        "The kids don't feel safe going to your house.",
+        "She doesn't feel safe with dad.",
+        "She doesn't want to go.",
+        "He is afraid of dad.",
+        "She is scared of him.",
+        "She is not comfortable there.",
+    ];
+    for phrase in &phrases {
+        let emails = vec![
+            email(0, "mom@test.com", "dad@test.com",
+                "Concern", "Mon, 06 Jan 2025 09:00:00", phrase),
+        ];
+        let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+        assert!(
+            findings.iter().any(|f| f.category == T7::Alienation),
+            "should detect Alienation in: {}", phrase
+        );
+    }
+}
+
+#[test]
+fn regex_detects_court_threat_phrases() {
+    let phrases = [
+        "I am going to court over this.",
+        "I will take you to court.",
+        "My lawyer will handle this.",
+        "My attorney has been notified.",
+    ];
+    for phrase in &phrases {
+        let emails = vec![
+            email(0, "mom@test.com", "dad@test.com",
+                "Warning", "Mon, 06 Jan 2025 09:00:00", phrase),
+        ];
+        let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+        assert!(
+            findings.iter().any(|f| f.category == T7::CourtThreat),
+            "should detect CourtThreat in: {}", phrase
+        );
+    }
+}
+
+#[test]
+fn regex_detects_admission_against_interest() {
+    let phrases = [
+        "It was my fault, I forgot the medication.",
+        "I didn't follow the schedule.",
+        "I should have called. I was wrong.",
+        "I apologize for missing pickup.",
+        "Sorry about the missed appointment.",
+    ];
+    for phrase in &phrases {
+        let emails = vec![
+            email(0, "mom@test.com", "dad@test.com",
+                "Apology", "Mon, 06 Jan 2025 09:00:00", phrase),
+        ];
+        let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+        assert!(
+            findings.iter().any(|f| f.category == T7::AdmissionAgainstInterest),
+            "should detect AdmissionAgainstInterest in: {}", phrase
+        );
+    }
+}
+
+#[test]
+fn regex_detects_iep_provisions() {
+    let cases = [
+        ("The IEP placement was changed without prior written notice.", "IDEA §300.503"),
+        ("Child had elopement incident. BIP needs updating.", "IDEA §300.324"),
+        ("FBA was not completed as required.", "IDEA §300.530"),
+    ];
+    for (body, expected_tag) in &cases {
+        let emails = vec![
+            email(0, "teacher@chimes.org", "dad@test.com",
+                "IEP Update", "Mon, 06 Jan 2025 10:00:00", body),
+        ];
+        let findings = f5(&emails, &[], "dad", "mom", "hazel", custody_start()).unwrap();
+        let iep_findings: Vec<_> = findings.iter()
+            .filter(|f| f.category == T7::IepViolation)
+            .collect();
+        assert!(!iep_findings.is_empty(), "should detect IepViolation in: {}", body);
+        let has_tag = iep_findings.iter()
+            .any(|f| f.summary.contains(expected_tag));
+        assert!(has_tag, "summary should contain '{}' for: {}", expected_tag, body);
+    }
+}
+
+// ============================================================
+// END-TO-END PIPELINE — all 10 stages from mbox to output files
+// ============================================================
+
+#[test]
+fn end_to_end_all_10_stages() {
+    use illbethejudgeofthat::parse::f1;
+    use illbethejudgeofthat::contradict::f7;
+    use illbethejudgeofthat::gaps::f9;
+    use illbethejudgeofthat::exhibit::f14;
+    use illbethejudgeofthat::cite_verify::{f17, f18};
+    use illbethejudgeofthat::filing::{f16, T19, T20};
+    use illbethejudgeofthat::forms::f15;
+
+    // Build a realistic mbox with varied email types across multiple weeks
+    let mbox = make_mbox(&[
+        // Week 1 (plaintiff) — daily reports + food refusal
+        ("teacher@chimes.org", "dad@test.com",
+         "Daily Communication", "Mon, 06 Jan 2025 09:00:00",
+         "Daily Chimes report: Hazel had a good day. She weighed 52 lbs."),
+        ("teacher@chimes.org", "dad@test.com",
+         "Daily Communication", "Tue, 07 Jan 2025 09:00:00",
+         "Daily Chimes report: Hazel refused all food at lunch today."),
+        ("teacher@chimes.org", "dad@test.com",
+         "Daily Communication", "Wed, 08 Jan 2025 09:00:00",
+         "Daily Chimes report: Hazel had a good day."),
+        // IEP concern
+        ("teacher@chimes.org", "dad@test.com",
+         "IEP Review Meeting", "Thu, 09 Jan 2025 10:00:00",
+         "The IEP placement was changed without prior written notice. Elopement concerns also noted. FBA needed."),
+        // Alienation from defendant
+        ("mom@test.com", "dad@test.com",
+         "Kids upset", "Fri, 10 Jan 2025 18:00:00",
+         "The kids don't feel safe going to your house. They don't want to go."),
+        // Week 2 (defendant) — communication silence (no emails Mon-Wed)
+        ("teacher@chimes.org", "dad@test.com",
+         "Daily Communication", "Thu, 16 Jan 2025 09:00:00",
+         "Daily Chimes report: Hazel was absent from school today."),
+        // Admission against interest
+        ("mom@test.com", "dad@test.com",
+         "Apology", "Fri, 17 Jan 2025 09:00:00",
+         "I forgot to give Hazel her medication. I should have remembered. Sorry about that."),
+        // Court threat
+        ("mom@test.com", "dad@test.com",
+         "Warning", "Mon, 20 Jan 2025 09:00:00",
+         "I am going to court over the custody arrangement. My lawyer agrees."),
+        // De-escalation from plaintiff
+        ("dad@test.com", "mom@test.com",
+         "Let's resolve this", "Tue, 21 Jan 2025 10:00:00",
+         "I understand your concerns. Let's work together for the kids' best interest."),
+        // State complaint
+        ("admin@msde.md.gov", "dad@test.com",
+         "State Complaint 26-154", "Wed, 22 Jan 2025 14:00:00",
+         "This is regarding the state complaint filed against Chimes School."),
+    ]);
+
+    let mbox_path = std::env::temp_dir().join("e2e_test.mbox");
+    std::fs::write(&mbox_path, &mbox).unwrap();
+
+    let out_dir = std::env::temp_dir().join("e2e_test_output");
+    std::fs::create_dir_all(&out_dir).unwrap();
+
+    let cs = NaiveDate::from_ymd_opt(2025, 1, 2).unwrap();
+
+    // Stage 1: Ingest
+    let emails = f0(&mbox_path).unwrap();
+    assert!(!emails.is_empty(), "stage 1: should parse emails from mbox");
+
+    // Stage 2: Attachments
+    let attachments = f1(&emails, &out_dir).unwrap();
+    // no attachments in this synthetic mbox, just verify no panic
+    let _ = attachments;
+
+    // Stage 3: Thread reconstruction
+    let threads = f2(&emails);
+    assert!(!threads.is_empty(), "stage 3: should produce at least one thread");
+    let thread_summary = f3(&threads);
+    assert!(!thread_summary.is_empty(), "stage 3: thread summary non-empty");
+
+    // Stage 4: Analyze
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", cs).unwrap();
+    assert!(findings.len() >= 5, "stage 4: should detect at least 5 findings, got {}", findings.len());
+
+    // Verify key categories are detected
+    let cats: Vec<_> = findings.iter().map(|f| &f.category).collect();
+    assert!(cats.iter().any(|c| **c == T7::FoodRecord), "should find food refusal");
+    assert!(cats.iter().any(|c| **c == T7::Alienation), "should find alienation");
+    assert!(cats.iter().any(|c| **c == T7::IepViolation), "should find IEP violation");
+    assert!(cats.iter().any(|c| **c == T7::AdmissionAgainstInterest), "should find admission");
+    assert!(cats.iter().any(|c| **c == T7::CourtThreat), "should find court threat");
+
+    // Exhibit numbers assigned
+    assert!(findings.iter().all(|f| f.exhibit_number.is_some()), "stage 4: all findings have exhibit numbers");
+
+    // Stage 5: Contradictions
+    let contradictions = f7(&findings, &threads);
+    let _contra_summary = f8(&contradictions);
+
+    // Stage 6: Gaps
+    let gaps = f9(&emails, &findings, &threads);
+    let gap_summary = f10(&gaps);
+    assert!(!gap_summary.is_empty(), "stage 6: gap summary non-empty");
+
+    // Stage 7: Precedents
+    let matches = f11(&findings);
+    assert!(!matches.is_empty(), "stage 7: should match at least one precedent");
+    let brief = f12(&matches, &findings);
+    assert!(!brief.is_empty(), "stage 7: brief non-empty");
+    let prec_summary = f13(&matches);
+    assert!(!prec_summary.is_empty(), "stage 7: precedent summary non-empty");
+
+    // Persist JSON outputs (verifies serialize doesn't panic)
+    std::fs::write(out_dir.join("findings.json"), serde_json::to_string_pretty(&findings).unwrap()).unwrap();
+    std::fs::write(out_dir.join("contradictions.json"), serde_json::to_string_pretty(&contradictions).unwrap()).unwrap();
+    std::fs::write(out_dir.join("gaps.json"), serde_json::to_string_pretty(&gaps).unwrap()).unwrap();
+    std::fs::write(out_dir.join("precedents.json"), serde_json::to_string_pretty(&matches).unwrap()).unwrap();
+    assert!(out_dir.join("findings.json").exists(), "findings.json written");
+
+    // Stage 8: Exhibit book (PDF)
+    let exhibit_path = f14(
+        &findings, &contradictions, &gaps, &out_dir,
+        "Michael Cochran", "Jane Doe",
+        &Some("C-99-CV-25-000123".into()),
+        "Anne Arundel", "MD",
+    ).unwrap();
+    assert!(exhibit_path.exists(), "stage 8: exhibit book PDF exists");
+    let exhibit_bytes = std::fs::read(&exhibit_path).unwrap();
+    assert_eq!(&exhibit_bytes[0..5], b"%PDF-", "stage 8: exhibit book is valid PDF");
+
+    // Stage 9: Citation verification
+    let cite_checks = f17(&matches);
+    assert!(!cite_checks.is_empty(), "stage 9: citation checks produced");
+    f18(&cite_checks); // just verify it doesn't panic
+
+    // Stage 10: Court filings (PDFs)
+    let ctx = T20 {
+        plaintiff: "Michael Cochran".into(),
+        defendant: "Jane Doe".into(),
+        case_number: "C-99-CV-25-000123".into(),
+        county: "Anne Arundel".into(),
+        court: "Circuit Court for Anne Arundel County".into(),
+        findings: findings.clone(),
+        precedents: matches.clone(),
+        contradictions: contradictions.clone(),
+        filing_type: T19::MotionModifyCustody,
+    };
+    let motion_path = f16(&ctx, &out_dir).unwrap();
+    assert!(motion_path.exists(), "stage 10: motion PDF exists");
+    let motion_bytes = std::fs::read(&motion_path).unwrap();
+    assert_eq!(&motion_bytes[0..5], b"%PDF-", "stage 10: motion is valid PDF");
+
+    let forms = f15(
+        &out_dir, "Michael Cochran", "Jane Doe",
+        "Hazel", "06/11/2018",
+        &Some("C-99-CV-25-000123".into()),
+        "Anne Arundel", "MD", false,
+    ).unwrap();
+    assert!(!forms.is_empty(), "stage 10: court forms generated");
+    for form in &forms {
+        assert!(form.exists(), "stage 10: form {} exists", form.display());
+    }
+
+    // Cleanup
+    std::fs::remove_file(&mbox_path).ok();
 }
