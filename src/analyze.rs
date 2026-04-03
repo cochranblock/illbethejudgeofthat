@@ -235,11 +235,12 @@ pub fn f5(
             ));
         }
 
-        // Food provided by specific parent
-        if body_lower.contains("provided by mom")
-            || body_lower.contains("mom provided")
-            || body_lower.contains("mom sent")
-            || body_lower.contains("brought from home")
+        // Food provided by specific parent — only from school or defendant
+        if !sender_is(email, plaintiff)
+            && (body_lower.contains("provided by mom")
+                || body_lower.contains("mom provided")
+                || body_lower.contains("mom sent")
+                || body_lower.contains("brought from home"))
         {
             findings.push(base(
                 T7::CustodyInterference,

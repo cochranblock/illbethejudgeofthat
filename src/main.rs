@@ -2,18 +2,10 @@ use clap::Parser;
 use std::path::PathBuf;
 use chrono::NaiveDate;
 
-mod ingest;
-mod parse;
-mod thread;
-mod analyze;
-mod contradict;
-mod gaps;
-mod exhibit;
-mod forms;
-mod precedent;
-mod query;
-mod filing;
-mod cite_verify;
+use illbethejudgeofthat::{
+    ingest, parse, thread, analyze, contradict, gaps,
+    exhibit, forms, precedent, query, filing, cite_verify,
+};
 
 #[derive(Parser)]
 #[command(name = "illbethejudgeofthat")]
