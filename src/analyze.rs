@@ -109,6 +109,17 @@ impl CustodySchedule {
     }
 }
 
+/// Return the most recent Thursday on or before today.
+/// Used as the default for --custody-start when the user does not specify one.
+/// Matches the weekday math in CustodySchedule::who_has_custody so results stay consistent.
+pub fn most_recent_thursday() -> NaiveDate {
+    let today = chrono::Local::now().date_naive();
+    // num_days_from_monday: Mon=0 Tue=1 Wed=2 Thu=3 Fri=4 Sat=5 Sun=6
+    // To reach Thursday: go back (weekday + 4) % 7 days.
+    let days_back = (today.weekday().num_days_from_monday() + 4) % 7;
+    today - chrono::Duration::days(days_back as i64)
+}
+
 /// Parse email Date header into NaiveDate (public for thread.rs)
 pub fn f4(date_str: &str) -> Option<NaiveDate> {
     let formats = [

@@ -1486,3 +1486,152 @@ fn end_to_end_all_10_stages() {
     // Cleanup
     std::fs::remove_file(&mbox_path).ok();
 }
+
+// ============================================================
+// FIX A — most_recent_thursday() correctness (backlog #1a)
+// ============================================================
+
+use illbethejudgeofthat::analyze::most_recent_thursday;
+use chrono::Datelike;
+
+#[test]
+fn most_recent_thursday_is_a_thursday() {
+    let thu = most_recent_thursday();
+    assert_eq!(thu.weekday(), chrono::Weekday::Thu,
+        "most_recent_thursday() must return a Thursday, got {:?} ({})", thu.weekday(), thu);
+}
+
+#[test]
+fn most_recent_thursday_is_not_in_the_future() {
+    let thu = most_recent_thursday();
+    let today = chrono::Local::now().date_naive();
+    assert!(thu <= today, "most_recent_thursday() must be <= today, got {}", thu);
+}
+
+#[test]
+fn most_recent_thursday_is_within_last_7_days() {
+    let thu = most_recent_thursday();
+    let today = chrono::Local::now().date_naive();
+    let days_back = (today - thu).num_days();
+    assert!(days_back < 7, "most_recent_thursday() should be within 6 days of today, got {} days back", days_back);
+}
+
+#[test]
+fn most_recent_thursday_consistent_with_custody_schedule() {
+    // The custody schedule anchors to plaintiff_start (must be a Thursday).
+    // most_recent_thursday() feeds into that anchor. Verify the schedule
+    // assigns the anchor date itself as plaintiff's week (weeks_diff = 0, even).
+    let thu = most_recent_thursday();
+    let emails = vec![
+        email(0, "school@chimes.org", "dad@test.com",
+            "Daily Communication", &format!("Thu, {:02} {} {} 09:00:00",
+                thu.day(),
+                ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+                    [(thu.month() - 1) as usize],
+                thu.year()),
+            "Daily Chimes report: good day"),
+    ];
+    let findings = f5(&emails, &[], "dad", "mom", "hazel", thu).unwrap();
+    // weeks_diff = 0 → even → plaintiff. Anchor date must be plaintiff's week.
+    assert!(!findings.is_empty(), "should detect daily report");
+    assert_eq!(findings[0].custody_week, Some(T8::Plaintiff),
+        "anchor Thursday should be plaintiff's week (weeks_diff=0)");
+}
+
+#[test]
+fn hardcoded_2025_date_is_not_the_default() {
+    // Regression: ensure the old hardcoded 2025-01-02 is gone.
+    // most_recent_thursday() in 2026 should NOT return 2025-01-02.
+    let thu = most_recent_thursday();
+    let old_default = NaiveDate::from_ymd_opt(2025, 1, 2).unwrap();
+    let today = chrono::Local::now().date_naive();
+    if today > NaiveDate::from_ymd_opt(2025, 1, 9).unwrap() {
+        // After Jan 9 2025, the dynamic default must differ from the old hardcode
+        assert_ne!(thu, old_default,
+            "most_recent_thursday() must not return the old hardcoded 2025-01-02 default");
+    }
+}
+
+// ============================================================
+// FIX B — sample.mbox is valid mbox (backlog #1b)
+// ============================================================
+
+#[test]
+fn sample_mbox_parses_to_22_emails() {
+    let mbox_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("examples/sample.mbox");
+    assert!(mbox_path.exists(), "examples/sample.mbox must exist");
+    let emails = f0(&mbox_path).unwrap();
+    assert_eq!(emails.len(), 22,
+        "sample.mbox should parse to exactly 22 emails, got {}", emails.len());
+}
+
+#[test]
+fn sample_mbox_has_expected_senders() {
+    let mbox_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("examples/sample.mbox");
+    let emails = f0(&mbox_path).unwrap();
+    let senders: Vec<&str> = emails.iter().map(|e| e.from.as_str()).collect();
+
+    assert!(senders.iter().any(|s| s.contains("privera@silverleafelem")),
+        "should have school nurse email");
+    assert!(senders.iter().any(|s| s.contains("dsantos@example.com")),
+        "should have defendant (Derek) emails");
+    assert!(senders.iter().any(|s| s.contains("msantos@example.com")),
+        "should have plaintiff (Maria) emails");
+    assert!(senders.iter().any(|s| s.contains("kwebb@maplewoodpeds")),
+        "should have pediatrician email");
+}
+
+#[test]
+fn sample_mbox_bodies_are_non_empty() {
+    let mbox_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("examples/sample.mbox");
+    let emails = f0(&mbox_path).unwrap();
+    let empty_bodies: Vec<usize> = emails.iter()
+        .filter(|e| e.body.trim().is_empty())
+        .map(|e| e.index)
+        .collect();
+    assert!(empty_bodies.is_empty(),
+        "all emails should have non-empty bodies; empty at indices: {:?}", empty_bodies);
+}
+
+#[test]
+fn sample_mbox_produces_findings_end_to_end() {
+    // Verify the sample actually drives findings through the pipeline.
+    // Custody start: Jan 16 2025 (Thu) — a known date in the sample's range.
+    let mbox_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("examples/sample.mbox");
+    let emails = f0(&mbox_path).unwrap();
+    assert!(!emails.is_empty());
+
+    let cs = NaiveDate::from_ymd_opt(2025, 1, 16).unwrap();
+    let findings = f5(&emails, &[], "maria", "derek", "tommy", cs).unwrap();
+
+    assert!(!findings.is_empty(),
+        "sample.mbox should produce findings through the pipeline");
+
+    // Health concern: inhaler incident has explicit health keywords
+    let has_health = findings.iter().any(|f|
+        matches!(f.category, T7::MedicationIssue | T7::HealthConcern));
+    assert!(has_health, "sample should produce MedicationIssue or HealthConcern from inhaler email");
+
+    // School absence: "marked absent on Friday, April 4"
+    let has_absence = findings.iter().any(|f| f.category == T7::SchoolAbsence);
+    assert!(has_absence, "sample should produce SchoolAbsence from absence notification email");
+
+    // Court threat: "I'll go back to court and let a judge sort it out"
+    let has_court = findings.iter().any(|f| f.category == T7::CourtThreat);
+    assert!(has_court, "sample should produce CourtThreat from Derek's court threat email");
+}
+
+#[test]
+fn sample_mbox_old_format_txt_does_not_parse_as_mbox() {
+    // Confirm the old === EMAIL N === format fails — this is the bug we fixed.
+    let txt_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("examples/sample_emails.txt");
+    if !txt_path.exists() { return; } // file may be removed later
+    let emails = f0(&txt_path).unwrap();
+    assert!(emails.is_empty() || emails.iter().all(|e| e.body.trim().is_empty()),
+        "old .txt format should not produce usable emails via mbox parser");
+}

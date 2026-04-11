@@ -39,9 +39,11 @@ struct Cli {
     #[arg(long, default_value = "weekly-thursday")]
     schedule: String,
 
-    /// Known Thursday when plaintiff has custody (YYYY-MM-DD)
-    #[arg(long, default_value = "2025-01-02")]
-    custody_start: String,
+    /// A Thursday you had custody (YYYY-MM-DD). Defaults to most recent Thursday.
+    /// Example: --custody-start 2025-01-02
+    /// WARNING: verify the default is YOUR week — even weeks are yours, odd are theirs.
+    #[arg(long)]
+    custody_start: Option<String>,
 
     /// Case number
     #[arg(long)]
@@ -80,11 +82,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return query::f19(&cli.output);
     }
 
-    let custody_start = NaiveDate::parse_from_str(&cli.custody_start, "%Y-%m-%d")
-        .unwrap_or_else(|_| {
-            eprintln!("warn: invalid --custody-start, using 2025-01-02");
-            NaiveDate::from_ymd_opt(2025, 1, 2).unwrap()
-        });
+    let custody_start = match &cli.custody_start {
+        Some(s) => NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap_or_else(|_| {
+            eprintln!("warn: invalid --custody-start '{}', using most recent Thursday", s);
+            analyze::most_recent_thursday()
+        }),
+        None => {
+            let thu = analyze::most_recent_thursday();
+            eprintln!("note: --custody-start not set, using most recent Thursday ({}).", thu);
+            eprintln!("      Verify this is YOUR custody week. Use --custody-start YYYY-MM-DD to override.");
+            thu
+        }
+    };
 
     println!("illbethejudgeofthat v0.4.1");
     println!("=========================");
@@ -352,3 +361,4 @@ fn escape_csv(s: &str) -> String {
         .replace('\n', " ")
         .replace('\r', "")
 }
+
