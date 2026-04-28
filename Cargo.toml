@@ -7,6 +7,8 @@ version = "0.4.1"
 edition = "2021"
 description = "Pro se custody case builder. Google Takeout to courtroom in one evening."
 license = "Unlicense"
+repository = "https://github.com/cochranblock/illbethejudgeofthat"
+authors = ["Cochran Block"]
 default-run = "illbethejudgeofthat"
 
 # tests = exopack for TRIPLE SIMS quality gate. Release strips both.
@@ -33,7 +35,7 @@ regex = "1"
 thiserror = "2"
 printpdf = "0.7"
 tokio = { version = "1", features = ["full"], optional = true }
-exopack = { git = "https://github.com/cochranblock/exopack", optional = true, features = ["triple_sims"] }
+exopack = { version = "0.2", optional = true, features = ["triple_sims"] }
 
 [profile.release]
 opt-level = "z"

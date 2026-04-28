@@ -254,8 +254,9 @@ dependencies = [
 
 [[package]]
 name = "exopack"
-version = "0.1.0"
-source = "git+https://github.com/cochranblock/exopack#d099d7f41a9ce97bb7d2091d7fcf3d25f54a4c96"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dd74976b01ef5cfb3da785ba79e25854582008632fdcc4096ca9ea2174c2e8f"
 
 [[package]]
 name = "find-msvc-tools"
