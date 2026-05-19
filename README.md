@@ -24,6 +24,8 @@
 
 ## Documentation
 
+**[cochranblock.github.io/illbethejudgeofthat](https://cochranblock.github.io/illbethejudgeofthat/)** — full mdBook docs.
+
 This README is the entry point. The actual docs live in two source-of-truth files at the root of the repo:
 
 - **[PROOF_OF_ARTIFACTS.md](PROOF_OF_ARTIFACTS.md)** — what exists today, status, source-linked. Pipeline stages, module status, CLI flags, output artifacts, test coverage, bug history. If you want to know what this project *does*, read this.

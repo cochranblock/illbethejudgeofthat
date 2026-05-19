@@ -8,6 +8,7 @@ edition = "2021"
 description = "Pro se custody case builder. Google Takeout to courtroom in one evening."
 license = "Unlicense"
 repository = "https://github.com/cochranblock/illbethejudgeofthat"
+documentation = "https://cochranblock.github.io/illbethejudgeofthat/"
 authors = ["Cochran Block"]
 default-run = "illbethejudgeofthat"
 

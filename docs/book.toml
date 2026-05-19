@@ -1,0 +1,13 @@
+[book]
+title = "illbethejudgeofthat"
+description = "Pro se legal case builder. Structures arguments, tracks evidence, generates court-ready documents."
+src = "src"
+language = "en"
+
+[output.html]
+git-repository-url = "https://github.com/cochranblock/illbethejudgeofthat"
+site-url = "/illbethejudgeofthat/"
+additional-css = ["theme/custom.css"]
+additional-js = ["theme/force-theme.js"]
+default-theme = "coal"
+preferred-dark-theme = "coal"
